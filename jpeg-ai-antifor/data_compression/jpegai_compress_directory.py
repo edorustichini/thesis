@@ -39,6 +39,7 @@ Edoardo Daniele Cannas - edoardodaniele.cannas@polimi.it
 # --- Libraries --- #
 import os
 import torch
+import pickle
 import glob
 from PIL import Image
 import sys
@@ -93,7 +94,8 @@ class RecoEncoder(CodecEncoder):
             # Encode and decode the image
             self.rec_image, decisions = self.ce.compress(raw_image)
 
-            # Save the bitstream
+            #TODO: decide wheter to skip or not
+            # Save the bitstream 
             self.create_bs(bin_path)
             self.init_ec_module()
 
@@ -129,6 +131,7 @@ def list_images(directory):
 
     # Iterate over each format and collect the image files
     for format in image_formats:
+        #TODO: images must be in .png format 
         image_files.extend(glob.glob(os.path.join(directory, format)))
     
     
@@ -137,7 +140,7 @@ def list_images(directory):
 
 
 
-def process_dir_with_encoder(coder: RecoEncoder, input_dir: str, save_dir: str):
+def process_dir_with_encoder(coder: RecoEncoder, input_dir: str, bin_dir: str):
 
     # --- Setup the coding engine --- #
     coder.print_coder_info()
@@ -154,7 +157,7 @@ def process_dir_with_encoder(coder: RecoEncoder, input_dir: str, save_dir: str):
     # --- Process the directory --- #
 
     # Create the directories if they don't exist
-    save_dir = os.path.join(save_dir, f"target_bpp_{kwargs['set_target_bpp']}")
+    save_dir = os.path.join(bin_dir, f"target_bpp_{kwargs['set_target_bpp']}")
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
@@ -173,12 +176,32 @@ def process_dir_with_encoder(coder: RecoEncoder, input_dir: str, save_dir: str):
         for image_path in tqdm(image_files):
             file = os.path.basename(image_path)
             extension = file.split(".")[-1]
-            bin_path = os.path.join(sub_save_dir, file.replace(f'.{extension}', ""))
-            dec_path = os.path.join(sub_save_dir, file.replace(f'.{extension}', ".png"))
+            
+            #Dirs for storing
+            bin_path = os.path.join(sub_save_dir, "bins", file.replace(f'.{extension}', ""))
+            dec_path = os.path.join(sub_save_dir, "dec_imgs", file.replace(f'.{extension}', ".png"))
+            os.makedirs(os.path.dirname(bin_path), exist_ok=True)
+            os.makedirs(os.path.dirname(dec_path), exist_ok=True)
+            
             if os.path.exists(dec_path):
                 print('Skipping (already decoded)', dec_path)
                 continue
-            coder.encode_and_decode(image_path, bin_path, dec_path)
+                
+            decisions = coder.encode_and_decode(image_path, bin_path, dec_path)
+            save_latents(decisions, sub_save_dir, file)
+            
+
+def save_latents(decisions, save_dir, file):
+    latents_path = os.path.join(save_dir, "latents", file.replace(f'.{file.split(".")[-1]}', ".pt"))
+    os.makedirs(os.path.dirname(latents_path), exist_ok=True)
+    img_data = {  # TODO: could create a class to store all this data, so keys are transformed in attributes
+        'model_y': dict({
+            'y': decisions['CCS_SGMM']['model_y']['y'],
+            'y_hat': decisions['CCS_SGMM']['model_y']['y_hat']}),
+        'model_uv': dict({
+            'y': decisions['CCS_SGMM']['model_uv']['y'],
+            'y_hat': decisions['CCS_SGMM']['model_uv']['y_hat']})}
+    torch.save(img_data, latents_path)
 
 # --- Main --- #
 if __name__ == "__main__":
