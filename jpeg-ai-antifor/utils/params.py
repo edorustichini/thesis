@@ -5,7 +5,7 @@ Authors:
 Edoardo Daniele Cannas - edoardodaniele.cannas@polimi.it
 """
 
-JPEG_AI_PATH = '/home/edo/Desktop/Università/Tesi/progetto_tesi/jpeg-ai-reference-software'  # put here the path to the jpeg-ai-reference-software
+JPEG_AI_PATH = '/data/lesc/users/rustichini/thesis/jpeg-ai-reference-software'  # put here the path to the jpeg-ai-reference-software
 
 PRISTINE_ROOT_DIR = '/nas/public/exchange/JPEG-AI/data/TEST'
 

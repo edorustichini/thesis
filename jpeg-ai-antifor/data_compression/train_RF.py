@@ -6,9 +6,9 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.utils import shuffle
 from sklearn.metrics import accuracy_score
-from sklearn.model_selection import train_test_spli, GridSearchCV
+from sklearn.model_selection import train_test_split, GridSearchCV
 
-
+from tqdm import tqdm
 
 
 def get_name(path: str) -> str:
@@ -21,10 +21,10 @@ def create_dataset(dataset,latents_dir, target = 'y'):
 
     for dir in glob.glob(latents_dir):
         # Process the images
-        for file_path in glob.glob(os.path.join(dir, "**", "latents", "*.pt")):
+        for file_path in tqdm(glob.glob(os.path.join(dir, "latents", "*.pt"))):
 
             img_id = get_name(file_path)
-            print(f"Processing {file_path}")
+            #print(f"Processing {file_path}")
             
 
             label = dataset.query('id == @img_id')['label'].iloc[0]
@@ -48,44 +48,33 @@ def create_dataset(dataset,latents_dir, target = 'y'):
 
 
 
-if __name__=="__main__":    
-    dir_train = "/data/lesc/users/rustichini/thesis/output/small_dataset/target_bpp_6/train/"
-    df_train = pd.read_csv("/data/lesc/users/rustichini/thesis/real-vs-fake/small_dataset/train.csv")
+if __name__=="__main__":
+    dir_train = "/data/lesc/users/rustichini/thesis/output/medium_dataset_output/target_bpp_6/train/"
+    df_train = pd.read_csv("/data/lesc/users/rustichini/thesis/train.csv")
     df_train = df_train.drop(columns = ["original_path", "path"])
     
  
 
-    dir_test = "/data/lesc/users/rustichini/thesis/output/small_dataset/target_bpp_6/test"
-    df_test = pd.read_csv("/data/lesc/users/rustichini/thesis/real-vs-fake/small_dataset/test.csv")
+    dir_test = "/data/lesc/users/rustichini/thesis/output/medium_dataset_output/target_bpp_6/test/"
+    df_test = pd.read_csv("/data/lesc/users/rustichini/thesis/test.csv")
     df_test = df_test.drop(columns = ["original_path", "path"])
-    
-    df_train = df_train.sample(n=3000)
-    df_test = df_test.sample(n=850)
 
     X_train, y_train = create_dataset(df_train, dir_train)
     X_test, y_test = create_dataset(df_test, dir_test)
 
-    
-    print(len(X_train), len(X_test))
+    print(len(X_train), len(X_test))    
+    rf = RandomForestClassifier()
 
-    
-    rf = RandomForestClassifier(n_estimators=200, n_jobs=-1, verbose=0)
+
+    print("Training Random Forest")
     rf.fit(X_train,y_train)
     
     
-    # --- Predizioni sul Set di Test ---
-    print("\nEsecuzione delle predizioni sul set di TEST...")
     y_pred = rf.predict(X_test)
     y_proba = rf.predict_proba(X_test)
-
-    # --- Valutazione delle Prestazioni ---
-    print("\n--- Valutazione delle Prestazioni del Random Forest ---")
-
-    num_classes = len(np.unique(y_train))
-    class_names = [f'Classe {i}' for i in range(num_classes)]
-
+    
     accuracy = accuracy_score(y_test, y_pred)
-    print(f"1. Accuratezza sul Test Set: {accuracy:.4f}")
+    print(f"1. Accuracy on test set: {accuracy:.4f}")
 
     
     

@@ -104,7 +104,7 @@ class RecoEncoder(CodecEncoder):
             self.close_bs()
 
             # Save decoded image
-            self.rec_image.write_png(dec_save_path)
+            #self.rec_image.write_png(dec_save_path)
 
             return decisions
         except Exception as e:
@@ -182,13 +182,24 @@ def process_dir_with_encoder(coder: RecoEncoder, input_dir: str, bin_dir: str):
             dec_path = os.path.join(sub_save_dir, "dec_imgs", file.replace(f'.{extension}', ".png"))
             os.makedirs(os.path.dirname(bin_path), exist_ok=True)
             os.makedirs(os.path.dirname(dec_path), exist_ok=True)
-            
-            if os.path.exists(dec_path):
-                print('Skipping (already decoded)', dec_path)
+
+            print("\nProcessing " + image_path) 
+            if os.path.exists(bin_path):
+                print('Skipping (already decoded)', bin_path)
+                print("Finished ")
+                print("-"*40 + "\n")    
                 continue
-                
+              
             decisions = coder.encode_and_decode(image_path, bin_path, dec_path)
+            iterations = 10
+            while decisions is None and iterations > 0:
+                decisions = coder.encode_and_decode(image_path, bin_path, dec_path)
+            if iterations == 0:
+                continue
+
             save_latents(decisions, sub_save_dir, file)
+            print("-"*40 + "\n")
+        print("Images saved into " + sub_save_dir)
             
 
 def save_latents(decisions, save_dir, file):
@@ -204,7 +215,7 @@ def save_latents(decisions, save_dir, file):
     torch.save(img_data, latents_path)
 
 # --- Main --- #
-def main():
+def setup():
     # --- Setup an argument parser --- #
     parser = argparse.ArgumentParser(description='Compress a directory of images using the RecoEncoder')
     parser.add_argument('--gpu', type=int, default=None, help='GPU index')
@@ -235,4 +246,4 @@ def main():
     latents = process_dir_with_encoder(coder, args.input_path, args.bin_path)
     
 if __name__ == "__main__":
-    main()
+    setup()
