@@ -108,7 +108,7 @@ class RecoEncoder(CodecEncoder):
 
             return decisions
         except Exception as e:
-            print(f"Error while processing the image: {e}")
+            print(f"Error while processing {os.path.basename(input_path)} : {e}")
             return None
 
 
@@ -195,17 +195,16 @@ def save_latents(decisions, save_dir, file):
     latents_path = os.path.join(save_dir, "latents", file.replace(f'.{file.split(".")[-1]}', ".pt"))
     os.makedirs(os.path.dirname(latents_path), exist_ok=True)
     img_data = {  # TODO: could create a class to store all this data, so keys are transformed in attributes
-        'model_y': dict({
-            'y': decisions['CCS_SGMM']['model_y']['y'],
-            'y_hat': decisions['CCS_SGMM']['model_y']['y_hat']}),
-        'model_uv': dict({
-            'y': decisions['CCS_SGMM']['model_uv']['y'],
-            'y_hat': decisions['CCS_SGMM']['model_uv']['y_hat']})}
+        'y': dict({
+            'model_y': decisions['CCS_SGMM']['model_y']['y'],
+            'model_uv': decisions['CCS_SGMM']['model_uv']['y']}),
+        'y_hat': dict({
+            'model_y': decisions['CCS_SGMM']['model_y']['y_hat'],
+            'model_uv': decisions['CCS_SGMM']['model_uv']['y_hat']})}
     torch.save(img_data, latents_path)
 
 # --- Main --- #
-if __name__ == "__main__":
-
+def main():
     # --- Setup an argument parser --- #
     parser = argparse.ArgumentParser(description='Compress a directory of images using the RecoEncoder')
     parser.add_argument('--gpu', type=int, default=None, help='GPU index')
@@ -233,4 +232,7 @@ if __name__ == "__main__":
     coder = RecoEncoder(encoder_parser, def_encoder_parser_decorator(encoder_parser))
 
     # --- Process the directory --- #
-    process_dir_with_encoder(coder, args.input_path, args.bin_path)
+    latents = process_dir_with_encoder(coder, args.input_path, args.bin_path)
+    
+if __name__ == "__main__":
+    main()
