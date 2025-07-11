@@ -187,7 +187,7 @@ def process_dir_with_encoder(coder: RecoEncoder, input_dir: str, bin_dir: str):
             if os.path.exists(bin_path):
                 print('Skipping (already decoded)', bin_path)
                 print("Finished ")
-                print("-"*40 + "\n")    
+                #TODO: decidere cosa fare in questo caso
                 continue
               
             decisions = coder.encode_and_decode(image_path, bin_path, dec_path)
