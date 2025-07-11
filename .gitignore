@@ -1,3 +1,15 @@
 *__pychache__*
 .vscode
-jpeg-ai-reference-software/*
+jpeg-ai-reference-software/
+
+__pychache__/
+*pycache*
+*_dataset
+*.zip
+JPEGAI_output/
+output/
+real_vs_fake/
+input_imgs
+jpeg-ai-antifor/data_compression/cfg
+*.csv
+
