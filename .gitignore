@@ -13,3 +13,4 @@ input_imgs
 jpeg-ai-antifor/data_compression/cfg
 *.csv
 
+models_saved/
