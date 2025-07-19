@@ -8,6 +8,7 @@ from sklearn.ensemble import RandomForestClassifier, HistGradientBoostingClassif
 from sklearn.utils import shuffle
 from sklearn.metrics import accuracy_score, classification_report
 from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.decomposition import PCA
 
 from tqdm import tqdm
 import pickle
@@ -35,19 +36,7 @@ def get_target(latent, target='y'):
             }
     return features
 
-
-def create_single_dataset(coder: RecoEncoder, dataset: pd.DataFrame, img_dir: str, target: str):
-    '''
-    Creates dataset only for the target given
-    '''
-    result = create_dataset(coder, dataset, img_dir)
-    if target=='y':
-        return result[0]
-    elif target=='y_hat':
-        return result[1]
-
-
-def create_dataset(coder: RecoEncoder, dataset: pd.DataFrame,img_dir: str):
+def create_dataset(coder: RecoEncoder, dataset: pd.DataFrame,img_dir: str, save_path = None):
     '''
     Create two different (X, y) for both targets
     '''
@@ -57,7 +46,17 @@ def create_dataset(coder: RecoEncoder, dataset: pd.DataFrame,img_dir: str):
     
     temp_file = []
 
+
+    dataset = dataset.set_index('id')
+    dataset = dataset.drop(columns=['Unnamed: 0', 'original_path'])
+    print(dataset)
     progress_bar = tqdm(dataset.iterrows(), total=len(dataset), desc="Creating dataset", ncols=100)
+
+    latent_y_path = os.path.join(save_path, 'y')
+    os.makedirs(latent_y_path, exist_ok=True)
+    latent_y_hat_path = os.path.join(save_path, 'y_hat')
+    os.makedirs(latent_y_hat_path, exist_ok=True)
+
 
     for idx, row in progress_bar:
     
@@ -76,15 +75,31 @@ def create_dataset(coder: RecoEncoder, dataset: pd.DataFrame,img_dir: str):
             temp_file.append(img_path)
         #TODO: aggiungere eccezioni se problemi con immagini o latenti
         
+        y_file = latent_y_path +"/"+ str(idx)
+        y_hat_file = latent_y_hat_path + "/"+str(idx)
+        
+        if os.path.exists(y_file + '.npy') and os.path.exists(y_hat_file+ '.npy'):
+            data = np.load(y_file + '.npy')
+            y_set.append(data)
+            data_hat = np.load(y_hat_file + '.npy')
+            y_hat_set.append(data_hat)
+            label = row['label']
+            labels.append(label)
+            continue
+
         latent = get_latents(img_path, coder)
         
         y = get_target(latent, 'y')
-        y_flat= torch.cat([torch.flatten(y['model_y']), torch.flatten(y['model_uv'])]).cpu().numpy() #TODO controllare .cpu, .numpy()
+        y_flat= torch.cat([torch.flatten(y['model_y']), torch.flatten(y['model_uv'])]).cpu().numpy() #first move it to cpu, then converts in .numpy()
         y_set.append(y_flat)
 
         y_hat = get_target(latent, 'y_hat')
         y_hat_flat = torch.cat([torch.flatten(y_hat['model_y']), torch.flatten(y_hat['model_uv'])]).cpu().numpy()
         y_hat_set.append(y_hat_flat)
+           
+        if False:
+            np.save(y_file, y_flat)
+            np.save(y_hat_file, y_hat_flat)
 
         label = row['label']
         labels.append(label)
@@ -94,9 +109,11 @@ def create_dataset(coder: RecoEncoder, dataset: pd.DataFrame,img_dir: str):
             os.remove(path)
 
     y_set = np.array(y_set)
-    y_set = np.array(y_set)
+    print(y_set.shape)
+    y_hat_set = np.array(y_hat_set)
     labels_array = np.array(labels)
-    return (shuffle(y_set, labels_array, random_state=42)),((shuffle(y_hat_set, labels_array, random_state=42)))  
+
+    return y_set, y_hat_set, labels_array 
 
 def save(obj, save_dir, name):
     os.makedirs(save_dir, exist_ok=True) 
@@ -107,14 +124,19 @@ def load(file_path):
     obj = joblib.load(file_path)
     return obj
 
-def sample(df, N):
+def sample(df, N, random: bool = False):
     '''
     Creates a subset of N samples 
     '''
-    df_1 = df[df['label']==1].sample(N//2)
-    df_0 = df[df['label']==0].sample(N//2)
-    df = pd.concat([df_1, df_0])
-    return df
+    if random:
+        df_1 = df[df['label']==1].sample(N//2)
+        df_0 = df[df['label']==0].sample(N//2)
+    else: 
+        df_1= df[df['label']==1][:N//2]
+        df_0= df[df['label']==0][:N//2]
+    final_df = pd.concat([df_1, df_0])
+
+    return final_df
 
 def setup(args):
     # --- Setup the device --- #
@@ -143,78 +165,114 @@ def setup(args):
     coder.set_target_bpp_idx(kwargs['bpp_idx'])
     return coder
 
-def test(args, n_samples: int):
+def test(args):
+    coder = setup(args)
     df_test = pd.read_csv(args.test_csv)
-    n_test_samples = 10
-    df_test = sample(df_test,n_test_samples)
-    X_test, y_test = create_dataset(coder, df_test, args.imgs_path, args.target)
-    save_test_path = "../../models_saved/test"+str(args.num_samples)+".joblib"
-    os.makedir(save_test_path, ok_exists=True)    
-    with open(save_test_path, "wb") as file:
-        joblib.dump((X_test, y_test), file)
-        
-    model_path = "../../models_saved/6_bpp/10_samples/y/RF_100_estimators.joblib"
-    model = load(model_path)
+    if df_test.shape[0] > args.num_samples:
+        df_test = sample(df_test,args.num_samples)
+    
+    X_test,X_hat_test, y_test = create_dataset(coder, df_test, args.imgs_path)
+
+    model ={}
+
     y_pred = model.predict(X_test)
     print(classification_report(y_test, y_pred))
 
-def prepare_dataset(args, save_models:bool = False):
+
+def prepare_dataset(args):
     coder = setup(args)
     imgs_dir = args.imgs_path
-    target = args.target #TODO: da provare anche con hat
-    df_train = pd.read_csv(args.train_csv)
-    n_train_samples = args.num_samples
-    if n_train_samples < 100000:
-        df_train = sample(df_train,n_train_samples)
-    (X_train, y_train), (X_hat_train, y_hat_train ) = create_dataset(coder, df_train,imgs_dir)
-    
-    #print("(num_samples, num_features)")
-    #print(f"Train dataset : {X_train.shape}")
-    
-    save_path = os.path.join(args.models_save_dir,str(args.set_target_bpp)+"_bpp",str(n_train_samples) + "_samples",'y')
-    save_hat_path = os.path.join(args.models_save_dir,str(args.set_target_bpp)+"_bpp",str(n_train_samples) + "_samples",'y_hat')
 
-    if save_models:
-        print("Datasets will be saved into:")    
-        print(save_path)
-        save((X_train, y_train), save_path, 'dataset')
-        print(save_hat_path)
-        save((X_hat_train, y_hat_train), save_hat_path, 'dataset')
-    return (X_train, y_train), (X_hat_train, y_hat_train ), save_path, save_hat_path
+    df_train = pd.read_csv(args.train_csv)
+    if args.num_samples is not None:
+        df_train = sample(df_train, args.num_samples)
+    
+    num_train = df_train.shape[0] 
+
+    save_latent_path = os.path.join(args.bin_path,str(args.set_target_bpp)+"_bpp","latent")
+    
+    X_train, X_hat_train, y_train = create_dataset(coder, df_train,imgs_dir, save_latent_path)
+    
+    print("(num_samples, num_features)")
+    print(f"Train dataset : {X_train.shape}")
+
+    save_model_path = os.path.join(args.models_save_dir,str(args.set_target_bpp)+"_bpp",str(num_train) + "_samples")
+    return X_train, X_hat_train, y_train, save_model_path # TODO: leva tuple e cambia il modo in cui sono restituiti (cambiando anche quindi train models)
 
 
 def train_models(X_train, y_train, save_path):
-    print("Models will be save into "+ save_path)
-    print("\nTraining  random forest...")
-    rf = RandomForestClassifier(n_estimators=150, n_jobs=8, random_state=42)
-    rf.fit(X_train, y_train)
-    print("Training finished ")
-    print("-"*90)
-    save(rf, save_path, name="RF_"+str(rf.n_estimators)+"_estimators")
+    ''''
+    Trains RF on dataset and save in 'save_path' using parameters found with gridsearch on a dataset's subset
+    '''
+    X_train, y_train = shuffle(X_train, y_train, random_state=42)
     
-    print("\nSearching with GridSearchCV...")
+    print("\nCreating subset for GridSearchCV...")
+    X_sub, _, y_sub, _ = train_test_split(
+        X_train, y_train, 
+        train_size=10000 if len(X_train) > 10_000 else 0.1, # 10% of the dataset 
+        stratify=y_train,
+        random_state=42
+    )
+    
+    print(f"Subset size: {len(X_sub)} samples (original: {len(X_train)})")
+    
     param_grid = {
-    'n_estimators': [50,100,150,200],             
-    'random_state': [42]             
+        'n_estimators': [50, 100],
+        'max_features': [0.05, 0.1, 'sqrt'],
+        'max_depth': [20, None],
+        'min_samples_split': [10, 20],
+        'min_samples_leaf': [2, 5],
+        'bootstrap': [True],
     }
-    rf = RandomForestClassifier()
-    grid_search = GridSearchCV(estimator=rf,n_jobs=4, param_grid=param_grid, cv=5, verbose=1)
-    grid_search.fit(X_train,y_train)
-    print("Training finished ")
-    print("-"*90)
-    save(grid_search, save_path, name="grid_search")
+    
+    print("\nStarting GridSearchCV on subset...")
+    rf = RandomForestClassifier(random_state=42, verbose=1)
+    grid_search = GridSearchCV(
+        estimator=rf,
+        param_grid=param_grid,
+        cv=3, # TODO: 3 o 5??  
+        n_jobs=1, 
+        verbose=2
+    )
+    grid_search.fit(X_sub, y_sub)
+    
+    print("\nBest parameters found:")
+    print(grid_search.best_params_)
+    print(f"Best CV score: {grid_search.best_score_:.4f}")
+    
+    save(grid_search, save_path, name="grid_search_results")
+
+    best_params = grid_search.best_params_
+    
+    
+    if 'n_estimators' in best_params:
+        best_params['n_estimators'] = min(200, best_params['n_estimators'] * 2)  # TODO: da controllare
+    
+    rf_final = RandomForestClassifier(
+        **best_params,
+        n_jobs=8,  
+        random_state=42,
+        verbose=1
+    )
+    
+    rf_final.fit(X_train, y_train)
+    print("\nFinal model trained successfully!")
+    
+    model_name = f"RF_final_{best_params['n_estimators']}trees_{best_params['max_features']}features"
+    save(rf_final, save_path, name=model_name)
+    
+    print(f"\nModels saved to {save_path}")    
 
 def train_process(args):
-    #(X_train, y_train),  _, save_path, _ = prepare_dataset(args)
-    
-    
-    save_path = "/data/lesc/users/rustichini/thesis/models_saved/6_bpp/15000_samples/y_hat"
-    X_train, y_train = load("/data/lesc/users/rustichini/thesis/models_saved/6_bpp/15000_samples/y_hat/dataset.joblib")
-    
-    print("(num_samples, num_features)")
-    #print(f"Train dataset : {X_train.shape}")
-    train_models(X_train, y_train, save_path)
+    #if args.num_samples < 100000:
+        #df_train = sample(df_train,args.num_samples)
 
+    X_train, X_hat_train, y_train, save_path= prepare_dataset(args)
+    train_models(X_train, y_train, os.path.join(save_path, 'y'))
+    
+    del X_train
+    
+    train_models(X_hat_train, y_train, os.path.join(save_path, 'y_hat'))
 
 if __name__=="__main__":
     # --- Setup an argument parser --- #
@@ -231,11 +289,13 @@ if __name__=="__main__":
                                                                                  'pipeline')
     #Arguments for training
     parser.add_argument('--num_samples', type=int, default=10, help='Number of samples to process')
+    parser.add_argument('--random_sample', type=bool, default=False, help='Sample')
     parser.add_argument("--train_csv",default="../../train.csv" , help="Path to dataset's csv file")
     parser.add_argument("--test_csv", default="../../test.csv", help="Path to test's csv file")
     parser.add_argument("-t", "--target",default=None, help="y_hat if quantized latent, else y")
+    parser.add_argument("--save", default=False, help="True if wanted to save dataset")
     parser.add_argument("--models_save_dir", default="/data/lesc/users/rustichini/thesis/models_saved", help="Directory to save models")
+
     args = parser.parse_args()
 
     train_process(args)
-
