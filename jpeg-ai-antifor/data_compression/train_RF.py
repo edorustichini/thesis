@@ -38,23 +38,22 @@ def get_target(latent, target='y'):
             }
     return features
 
+def clean_dataset(dataset: pd.DataFrame) -> pd.DataFrame:
+    dataset = dataset.set_index('id')
+    dataset = dataset.drop(columns=['Unnamed: 0', 'original_path'])
+    return dataset
+
 def create_dataset(coder: RecoEncoder, dataset: pd.DataFrame,img_dir: str, save_path = None):
-    '''
-    Create two different (X, y) for both targets
-    '''
-    print("BEGIN")
     y_set = []
     y_hat_set = []
     labels = []
-    
     temp_file = []
-
 
     dataset = dataset.set_index('id')
     dataset = dataset.drop(columns=['Unnamed: 0', 'original_path'])
     print(dataset)
-    progress_bar = tqdm(dataset.iterrows(), total=len(dataset), desc="Creating dataset", ncols=100)
 
+    progress_bar = tqdm(dataset.iterrows(), total=len(dataset), desc="Creating dataset", ncols=100)
     latent_y_path = os.path.join(save_path, 'y')
     os.makedirs(latent_y_path, exist_ok=True)
     latent_y_hat_path = os.path.join(save_path, 'y_hat')
@@ -106,10 +105,9 @@ def create_dataset(coder: RecoEncoder, dataset: pd.DataFrame,img_dir: str, save_
 
         label = row['label']
         labels.append(label)
+        
+        os.remove(img_path)
 
-    for path in temp_file: #TODO: verificare se necessario
-        if os.path.exists(path):
-            os.remove(path)
 
     y_set = np.array(y_set)
     print(y_set.shape)
@@ -117,7 +115,6 @@ def create_dataset(coder: RecoEncoder, dataset: pd.DataFrame,img_dir: str, save_
     labels_array = np.array(labels)
 
     return y_set, y_hat_set, labels_array 
-
 
 def test_model(args, model, target: str = 'y'):
     coder = setup(args)
@@ -268,8 +265,6 @@ def train_models(X_train, y_train, save_path, target: str):
     rf.fit(X_train, y_train)
     save(rf, save_path, name="RF_"+str(rf.n_estimators))
 
-
-
 def train_process(args):
     X_train, X_hat_train, y_train, save_path= prepare_dataset(args)
     train_models(X_train, y_train, save_path, 'y')
@@ -277,8 +272,6 @@ def train_process(args):
     del X_train
     
     train_models(X_hat_train, y_train,  save_path, 'y_hat')
-
-
 
 def save(obj, save_dir, name):
     os.makedirs(save_dir, exist_ok=True) 
@@ -357,11 +350,12 @@ if __name__=="__main__":
 
     args = parser.parse_args()
 
-    #train_process(args)
+    train_process(args)
 
-
+    '''
     model = load("/data/lesc/users/rustichini/thesis/models_saved/12_bpp/70000_samples/y/RF_200.joblib")
     test_model(args, model,'y')
 
     model = load("/data/lesc/users/rustichini/thesis/models_saved/12_bpp/70000_samples/y_hat/RF_200.joblib")
     test_model(args, model,'y_hat')
+    '''
