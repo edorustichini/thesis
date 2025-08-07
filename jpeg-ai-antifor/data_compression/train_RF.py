@@ -6,7 +6,7 @@ import argparse
 
 from sklearn.ensemble import RandomForestClassifier, HistGradientBoostingClassifier
 from sklearn.utils import shuffle
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.decomposition import PCA
 
@@ -14,6 +14,8 @@ from tqdm import tqdm
 import pickle
 import joblib
 from jpegai_compress_directory import * #setup_coder
+import matplotlib.pyplot as plt
+
 
 from PIL import Image
 
@@ -40,6 +42,7 @@ def create_dataset(coder: RecoEncoder, dataset: pd.DataFrame,img_dir: str, save_
     '''
     Create two different (X, y) for both targets
     '''
+    print("BEGIN")
     y_set = []
     y_hat_set = []
     labels = []
@@ -97,7 +100,7 @@ def create_dataset(coder: RecoEncoder, dataset: pd.DataFrame,img_dir: str, save_
         y_hat_flat = torch.cat([torch.flatten(y_hat['model_y']), torch.flatten(y_hat['model_uv'])]).cpu().numpy()
         y_hat_set.append(y_hat_flat)
            
-        if False:
+        if save_path is not None:
             np.save(y_file, y_flat)
             np.save(y_hat_file, y_hat_flat)
 
@@ -114,6 +117,168 @@ def create_dataset(coder: RecoEncoder, dataset: pd.DataFrame,img_dir: str, save_
     labels_array = np.array(labels)
 
     return y_set, y_hat_set, labels_array 
+
+
+def test_model(args, model, target: str = 'y'):
+    coder = setup(args)
+    df_test = pd.read_csv(args.test_csv)
+    
+    if df_test.shape[0] > args.num_samples_test:
+        df_test = sample(df_test,args.num_samples_test)
+
+    save_latent_path = os.path.join(args.bin_path,str(args.set_target_bpp)+"_bpp","test","latent")
+    print(save_latent_path)
+    if target=='y':
+        X_test, _, y_test = create_dataset(coder, df_test, args.imgs_path, save_latent_path)
+    elif target=='y_hat':
+        _, X_test, y_test = create_dataset(coder, df_test, args.imgs_path, save_latent_path)
+
+
+    print("Test on target " + target)
+    y_pred = model.predict(X_test)
+    print(classification_report(y_test, y_pred))
+
+    print("Accuray score : " + str(accuracy_score(y_test, y_pred)))
+
+    cm = confusion_matrix(y_test, y_pred)
+
+    # Plot confusion matrix (matplotlib only)
+    fig, ax = plt.subplots(figsize=(5, 4))
+    im = ax.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+    ax.figure.colorbar(im, ax=ax)
+    classes = np.unique(y_test)
+    ax.set(
+        xticks=np.arange(len(classes)),
+        yticks=np.arange(len(classes)),
+        xticklabels=classes,
+        yticklabels=classes,
+        xlabel="Predicted label",
+        ylabel="True label",
+        title=f"Confusion Matrix ({target})"
+    )
+
+    # Annotazioni nei quadranti
+    thresh = cm.max() / 2.
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            ax.text(j, i, format(cm[i, j], 'd'),
+                    ha="center", va="center",
+                    color="white" if cm[i, j] > thresh else "black")
+
+    fig.tight_layout()
+
+    # Salvataggio immagine
+    cm_save_path = os.path.join(args.bin_path, str(args.set_target_bpp) + "_bpp", "test", f"confusion_matrix_{target}.png")
+    os.makedirs(os.path.dirname(cm_save_path), exist_ok=True)
+    plt.savefig(cm_save_path)
+    plt.close()
+    print(f"Confusion matrix saved to: {cm_save_path}")
+
+def prepare_dataset(args):
+    coder = setup(args)
+    imgs_dir = args.imgs_path
+
+    df_train = pd.read_csv(args.train_csv)
+    if args.num_samples is not None:
+        df_train = sample(df_train, args.num_samples)
+    
+    num_train = df_train.shape[0] 
+
+    save_latent_path = os.path.join(args.bin_path,str(args.set_target_bpp)+"_bpp","latent")
+    
+    X_train, X_hat_train, y_train = create_dataset(coder, df_train,imgs_dir, save_latent_path)
+    
+    print("(num_samples, num_features)")
+    print(f"Train dataset : {X_train.shape}")
+
+    save_model_path = os.path.join(args.models_save_dir,str(args.set_target_bpp)+"_bpp",str(num_train) + "_samples")
+    return X_train, X_hat_train, y_train, save_model_path # TODO: leva tuple e cambia il modo in cui sono restituiti (cambiando anche quindi train models)
+
+
+def train_models(X_train, y_train, save_path, target: str):
+    ''''
+    Trains RF on dataset and save in 'save_path' using parameters found with gridsearch on a dataset's subset
+    '''
+    '''
+    save_path = os.path.join(save_path, target)
+    X_train, y_train = shuffle(X_train, y_train, random_state=42)
+    
+    print("\nCreating subset for GridSearchCV...")
+    X_sub, _, y_sub, _ = train_test_split(
+        X_train, y_train, 
+        train_size=10000 if len(X_train) > 10000 else 0.1, # 10% of the dataset 
+        stratify=y_train,
+        random_state=42
+    )
+    
+    print(f"Subset size: {len(X_sub)} samples (original: {len(X_train)})")
+    
+    param_grid = {
+        'n_estimators': [50, 100, 150],
+        'max_features': [0.05, 0.1, 'sqrt'],
+        'max_depth': [20, None],
+        'min_samples_split': [10, 20],
+        'min_samples_leaf': [2, 5],
+        'bootstrap': [True],
+    }
+    
+    print("\nStarting GridSearchCV on subset...")
+    rf = RandomForestClassifier(random_state=42, verbose=1)
+    grid_search = GridSearchCV(
+        estimator=rf,
+        param_grid=param_grid,
+        cv=3, # TODO: 3 o 5??  
+        n_jobs=1, 
+        verbose=1
+    )
+    grid_search.fit(X_sub, y_sub)
+    
+    print("\nBest parameters found:")
+    print(grid_search.best_params_)
+    print(f"Best CV score: {grid_search.best_score_:.4f}")
+    
+    save(grid_search, save_path, name="grid_search_results")
+
+    best_params = grid_search.best_params_
+    
+    
+    if 'n_estimators' in best_params:
+        best_params['n_estimators'] = min(200, best_params['n_estimators'] * 2)  # TODO: da controllare
+    
+    rf_final = RandomForestClassifier(
+        **best_params,
+        n_jobs=1,  
+        random_state=42,
+        verbose=1
+    )
+    
+    rf_final.fit(X_train, y_train)
+    
+    model_name = f"RF_final_{best_params['n_estimators']}trees_{best_params['max_features']}features"
+    save(rf_final, save_path, name=model_name)
+    
+    print(f"\nModels saved to {save_path}")   
+
+    test_model(args, rf_final, target) '''
+    save_path = os.path.join(save_path, target)
+    X_train, y_train = shuffle(X_train, y_train, random_state=42)
+    rf = RandomForestClassifier(max_depth=20, max_features=0.1, min_samples_leaf=5,
+                       min_samples_split=20, n_estimators=200, n_jobs=1,
+                       random_state=42, verbose=1)
+    rf.fit(X_train, y_train)
+    save(rf, save_path, name="RF_"+str(rf.n_estimators))
+
+
+
+def train_process(args):
+    X_train, X_hat_train, y_train, save_path= prepare_dataset(args)
+    train_models(X_train, y_train, save_path, 'y')
+    
+    del X_train
+    
+    train_models(X_hat_train, y_train,  save_path, 'y_hat')
+
+
 
 def save(obj, save_dir, name):
     os.makedirs(save_dir, exist_ok=True) 
@@ -165,116 +330,9 @@ def setup(args):
     coder.set_target_bpp_idx(kwargs['bpp_idx'])
     return coder
 
-def test(args):
-    coder = setup(args)
-    df_test = pd.read_csv(args.test_csv)
-    if df_test.shape[0] > args.num_samples:
-        df_test = sample(df_test,args.num_samples)
-    
-    X_test,X_hat_test, y_test = create_dataset(coder, df_test, args.imgs_path)
-
-    model ={}
-
-    y_pred = model.predict(X_test)
-    print(classification_report(y_test, y_pred))
-
-
-def prepare_dataset(args):
-    coder = setup(args)
-    imgs_dir = args.imgs_path
-
-    df_train = pd.read_csv(args.train_csv)
-    if args.num_samples is not None:
-        df_train = sample(df_train, args.num_samples)
-    
-    num_train = df_train.shape[0] 
-
-    save_latent_path = os.path.join(args.bin_path,str(args.set_target_bpp)+"_bpp","latent")
-    
-    X_train, X_hat_train, y_train = create_dataset(coder, df_train,imgs_dir, save_latent_path)
-    
-    print("(num_samples, num_features)")
-    print(f"Train dataset : {X_train.shape}")
-
-    save_model_path = os.path.join(args.models_save_dir,str(args.set_target_bpp)+"_bpp",str(num_train) + "_samples")
-    return X_train, X_hat_train, y_train, save_model_path # TODO: leva tuple e cambia il modo in cui sono restituiti (cambiando anche quindi train models)
-
-
-def train_models(X_train, y_train, save_path):
-    ''''
-    Trains RF on dataset and save in 'save_path' using parameters found with gridsearch on a dataset's subset
-    '''
-    X_train, y_train = shuffle(X_train, y_train, random_state=42)
-    
-    print("\nCreating subset for GridSearchCV...")
-    X_sub, _, y_sub, _ = train_test_split(
-        X_train, y_train, 
-        train_size=10000 if len(X_train) > 10_000 else 0.1, # 10% of the dataset 
-        stratify=y_train,
-        random_state=42
-    )
-    
-    print(f"Subset size: {len(X_sub)} samples (original: {len(X_train)})")
-    
-    param_grid = {
-        'n_estimators': [50, 100],
-        'max_features': [0.05, 0.1, 'sqrt'],
-        'max_depth': [20, None],
-        'min_samples_split': [10, 20],
-        'min_samples_leaf': [2, 5],
-        'bootstrap': [True],
-    }
-    
-    print("\nStarting GridSearchCV on subset...")
-    rf = RandomForestClassifier(random_state=42, verbose=1)
-    grid_search = GridSearchCV(
-        estimator=rf,
-        param_grid=param_grid,
-        cv=3, # TODO: 3 o 5??  
-        n_jobs=1, 
-        verbose=2
-    )
-    grid_search.fit(X_sub, y_sub)
-    
-    print("\nBest parameters found:")
-    print(grid_search.best_params_)
-    print(f"Best CV score: {grid_search.best_score_:.4f}")
-    
-    save(grid_search, save_path, name="grid_search_results")
-
-    best_params = grid_search.best_params_
-    
-    
-    if 'n_estimators' in best_params:
-        best_params['n_estimators'] = min(200, best_params['n_estimators'] * 2)  # TODO: da controllare
-    
-    rf_final = RandomForestClassifier(
-        **best_params,
-        n_jobs=8,  
-        random_state=42,
-        verbose=1
-    )
-    
-    rf_final.fit(X_train, y_train)
-    print("\nFinal model trained successfully!")
-    
-    model_name = f"RF_final_{best_params['n_estimators']}trees_{best_params['max_features']}features"
-    save(rf_final, save_path, name=model_name)
-    
-    print(f"\nModels saved to {save_path}")    
-
-def train_process(args):
-    #if args.num_samples < 100000:
-        #df_train = sample(df_train,args.num_samples)
-
-    X_train, X_hat_train, y_train, save_path= prepare_dataset(args)
-    train_models(X_train, y_train, os.path.join(save_path, 'y'))
-    
-    del X_train
-    
-    train_models(X_hat_train, y_train, os.path.join(save_path, 'y_hat'))
 
 if __name__=="__main__":
+    print("INIZIO")
     # --- Setup an argument parser --- #
     # Arguments for coder
     parser = argparse.ArgumentParser(description='Compress a directory of images using the RecoEncoder')
@@ -288,7 +346,8 @@ if __name__=="__main__":
                                                                                  'models used in the encoder-decoder'
                                                                                  'pipeline')
     #Arguments for training
-    parser.add_argument('--num_samples', type=int, default=10, help='Number of samples to process')
+    parser.add_argument('--num_samples', type=int, default=1000, help='Number of samples to train on')
+    parser.add_argument('--num_samples_test', type=int, default=300, help='Number of samples to test on')
     parser.add_argument('--random_sample', type=bool, default=False, help='Sample')
     parser.add_argument("--train_csv",default="../../train.csv" , help="Path to dataset's csv file")
     parser.add_argument("--test_csv", default="../../test.csv", help="Path to test's csv file")
@@ -298,4 +357,11 @@ if __name__=="__main__":
 
     args = parser.parse_args()
 
-    train_process(args)
+    #train_process(args)
+
+
+    model = load("/data/lesc/users/rustichini/thesis/models_saved/12_bpp/70000_samples/y/RF_200.joblib")
+    test_model(args, model,'y')
+
+    model = load("/data/lesc/users/rustichini/thesis/models_saved/12_bpp/70000_samples/y_hat/RF_200.joblib")
+    test_model(args, model,'y_hat')
