@@ -1,12 +1,9 @@
 import argparse
 import sys
 
-sys.path.append("../")
-from params import JPEG_AI_PATH
-
-
-
-
+# --- Setup the JPEG-AI software suite --- #
+sys.path.append('../')
+from utils.params import *
 
 def setup_parser():
     # --- Setup an argument parser --- #
@@ -18,7 +15,7 @@ def setup_parser():
     coder_group.add_argument('--gpu', type=int, default=0, help='GPU index')
     coder_group.add_argument('--set_target_bpp', type=int, default=1, help='Set the target bpp '
                                                                            '(multiplied by 100)')
-    coder_group.add_argument('--models_dir_name', type=str, default=f'{JPEG_AI_PATH}/models',
+    coder_group.add_argument('--models_dir_name', type=str, default=JPEG_AI_PATH + "/models",
                              help='Directory name for the '
                                   'models used in the encoder-decoder'
                                   'pipeline')
