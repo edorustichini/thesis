@@ -1,7 +1,7 @@
 from random import shuffle
 
 import torch
-from utils import save
+from common import save
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
 
@@ -11,6 +11,7 @@ import os
 import numpy as np
 from sklearn.utils import shuffle
 from main import prepare_dataset
+from dataset import flatten_latents
 
 
 class ModelTrainer:
@@ -30,6 +31,7 @@ class ModelTrainer:
             self.save_model(save_path)
 
     def save_model(self, save_path):
+        print(self.model.name + "will be saved into"+ save_path)
         save(self.model, save_path, self.model.name )
     
 class RandomForest(RandomForestClassifier):
@@ -45,14 +47,6 @@ class GridSearch(GridSearchCV):
         if name is None:
             name = f"grid_search"
         self.name = name
-        
-def flatten_latents(latents):
-    flat_set = []
-    for latent in latents:
-        flat = torch.cat([torch.flatten(latent['model_y']), torch.flatten(latent['model_uy'])]).cpu().numpy()
-        flat_set.append(flat)
-    return flat_set
-    
 
 def training(X_train, labels, target: str):
     # pre-process latents
