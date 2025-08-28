@@ -1,6 +1,7 @@
 import os.path
 import pandas as pd
 from tqdm import tqdm
+import torch
 
 class DatasetManager:
     "Class for database management"
@@ -78,6 +79,10 @@ class DatasetManager:
         return final_df
 
     #TODO: volendo si può aggiungere read_csv con eccezione se non trova nulla
-    
 
-        
+def flatten_latents(latents):
+    flat_set = []
+    for latent in latents:
+        flat = torch.cat([torch.flatten(latent['model_y']), torch.flatten(latent['model_uv'])]).cpu().numpy()
+        flat_set.append(flat)
+    return flat_set

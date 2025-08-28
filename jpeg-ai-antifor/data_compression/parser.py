@@ -1,9 +1,7 @@
 import argparse
 import sys
-
-# --- Setup the JPEG-AI software suite --- #
 sys.path.append('../')
-from utils.params import *
+from utils.params import JPEG_AI_PATH
 
 def setup_parser():
     # --- Setup an argument parser --- #
