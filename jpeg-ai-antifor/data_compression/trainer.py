@@ -4,16 +4,13 @@ import torch
 from utils import save
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
-from utils import save
 
 from parser import setup_parser
-from coder import CoderManager
-from dataset import DatasetManager
 import pandas as pd
-from main import clean_dataframe
 import os
 import numpy as np
 from sklearn.utils import shuffle
+from main import prepare_dataset
 
 
 class ModelTrainer:
@@ -52,40 +49,15 @@ class GridSearch(GridSearchCV):
 def flatten_latents(latents):
     flat_set = []
     for latent in latents:
-        flat = torch.cat([torch.flatten(latents['model_y']), torch.flatten(latents['model_uy'])]).cpu().numpy()
+        flat = torch.cat([torch.flatten(latent['model_y']), torch.flatten(latent['model_uy'])]).cpu().numpy()
         flat_set.append(flat)
     return flat_set
     
-    
-    
-def prepare_dataset(args):
-    # Coder setup
-    coder_manager = CoderManager(args)
-    
-    # Dataset setup
-    dataset_manager = DatasetManager(coder_manager.coder)
-    
-    # -- Dataset creation --
-    df_train = pd.read_csv(args.train_csv)
-    #df_train = dataset_manager.clean_dataframe(df_train)
-    
-    if args.num_samples is not None:
-        df_train = dataset_manager.sample_subset(df_train, args.num_samples, args.random_sample)
-    
-    
-    save_latent_path = os.path.join(args.bin_path,str(args.set_target_bpp)+"_bpp","latent") if args.save else None
-    
-    #extract latent
-    X_raw, X_hat_raw, labels = dataset_manager.build_latent_dataset(
-        df_train,
-        args.img_dir,
-        save_latent_path)
-    return X_raw, X_hat_raw, labels
 
-def training(X_raw, labels, target: str):
+def training(X_train, labels, target: str):
     # pre-process latents
     y_train = np.array(labels)
-    X_train = np.array(flatten_latents(X_raw))
+    X_train = np.array(flatten_latents(X_train))
     grid_params = {
         'n_estimators': [50, 75, 100],
         'max_features': [0.05, 0.1, 'sqrt'],
@@ -98,7 +70,7 @@ def training(X_raw, labels, target: str):
     trainer = ModelTrainer(model)
     save_model_path = os.path.join(args.models_save_dir,str(args.set_target_bpp)+"_bpp",str(len(X_train)) + "_samples")
 
-    trainer.train_model(X_train, labels, os.path.join(save_model_path, target))
+    trainer.train_model(X_train, y_train, os.path.join(save_model_path, target))
 
 
 def train_process(args):
@@ -110,6 +82,10 @@ def train_process(args):
 
 if __name__ == "__main__":
     # Argument parsing
+    """
+    Example of use: 
+        python trainer.py ../../input_imgs/ ../../JPEGAI_output/ --set_target_bpp 600 --num_samples 30000 --gpu 0
+    """
     args = setup_parser()
     train_process(args)
    

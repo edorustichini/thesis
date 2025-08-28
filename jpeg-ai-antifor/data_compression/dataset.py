@@ -6,7 +6,7 @@ class DatasetManager:
     "Class for database management"
     def __init__(self, coder):
         self.coder = coder
-        # TODO: valurare se mettere dataframe tra attributi
+        # TODO: valurare se mettere dataframe tra attributi, o path per dir dove salvare cose
         
     def build_latent_dataset(self, df: pd.DataFrame, img_dir:str, save_dir: str= None):
         """
@@ -18,17 +18,25 @@ class DatasetManager:
             save_dir: path to directory for saving latents
         """
         X, X_hat, labels = [],[],[]
-        
-        for __, row in tqdm(df.iterrows(), total=len(df), desc="Extracting latents from selected images..."):
+        progress_bar = tqdm(df.iterrows(), total=len(df), desc="Extracting latents from selected images...")
+        self.coder.print_coder_info()
+        for idx, row in progress_bar:
             img_path = os.path.join(img_dir, str(row['path']))
 
-            decisions = self.coder.get_latens(img_path, bin_path=None, dec_save_path=None)
+            decisions = self.coder.get_latents(img_path, bin_path=None, dec_save_path=None)
             # TODO: gestire caso dove non viene ritornato decisions per qualche problema del coder
-            latents = decisions['CCS_SGMM']
-            y,y_hat = self.get_both_targets(latents)
+            
+            latent = decisions['CCS_SGMM']
+
+            y,y_hat = self.get_both_targets(latent)
+
             if save_dir is not None:
-                self.save_latent(save_dir, y)
-                self.save_latent(save_dir, y_hat)
+                # TODO: da implementare ricordandosi che qua non sono elaborati i dati
+                # salvare in un file con idx dell'immagine nel nome, per dare la possibilità di
+                #  controllare se un file con lo stesso nome c'è già per saltare l'elaborazione
+                # questo controllo avrebbe però farlo prima del calcolo
+                pass
+
             X.append(y)
             X_hat.append(y_hat)
             labels.append(row['label'])
@@ -67,8 +75,8 @@ class DatasetManager:
             df_1 = df[df['label'] == 1][:N // 2]
             df_0 = df[df['label'] == 0][:N // 2]
         final_df = pd.concat([df_1, df_0])
-        
         return final_df
+
     #TODO: volendo si può aggiungere read_csv con eccezione se non trova nulla
     
 
