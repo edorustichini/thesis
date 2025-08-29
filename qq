@@ -1,0 +1,77 @@
+[33mcommit f2b213a9e59fb33f566824b9c54e6e85c153f537[m[33m ([m[1;36mHEAD -> [m[1;32mre-design[m[33m, [m[1;31morigin/re-design[m[33m)[m
+Author: Edoardo Rustichini <edorusti@gmail.com>
+Date:   Thu Aug 7 14:28:14 2025 +0200
+
+    Update train
+
+[33mcommit e846968b7efdfae83d075d8533477b65dec7cd05[m
+Author: Edoardo Rustichini <edorusti@gmail.com>
+Date:   Sat Jul 19 15:32:37 2025 +0200
+
+    Caothic version of train
+
+[33mcommit 0752126a4ee86fd2792b34f1a38a64f59e710d59[m[33m ([m[1;31morigin/bugfix[m[33m, [m[1;32mmain[m[33m, [m[1;32mbugfix[m[33m)[m
+Author: Edoardo Rustichini <edorusti@gmail.com>
+Date:   Tue Jul 15 22:09:08 2025 +0200
+
+    Create dataset now return both targets
+
+[33mcommit 790ec781a26bc77c419081e0a9956767492e0fdd[m
+Author: Edoardo Rustichini <edorusti@gmail.com>
+Date:   Tue Jul 15 17:58:41 2025 +0200
+
+    Add tSNE
+
+[33mcommit 5b911f369cbb0dcb6d72afd16a316f1188d5678f[m
+Author: Edoardo Rustichini <edorusti@gmail.com>
+Date:   Sun Jul 13 11:53:38 2025 +0200
+
+    On the fly training
+
+[33mcommit 0e3770096773ef6c2cd950bf2426056aaa3998e0[m
+Author: Edoardo Rustichini <edorusti@gmail.com>
+Date:   Sat Jul 12 11:47:40 2025 +0200
+
+    Separate setup_coder from process_dir, and add get_latents function
+
+[33mcommit fd15f2714901191b11f1810da382846a7d739830[m
+Author: Edoardo Rustichini <edorusti@gmail.com>
+Date:   Fri Jul 11 19:09:47 2025 +0200
+
+    Refactor parsing
+
+[33mcommit 46d1e4aae76aed69575bc5247261e6ada5f58527[m
+Author: Edoardo Rustichini <edorusti@gmail.com>
+Date:   Fri Jul 11 19:06:57 2025 +0200
+
+    Update .gitignore
+
+[33mcommit dc90ba14adf66c3549dd23399fe1f63be2958eee[m
+Author: Edoardo Rustichini <edorusti@gmail.com>
+Date:   Fri Jul 11 09:38:06 2025 +0200
+
+    Add argument parsing
+
+[33mcommit 34b507109b8d2a1451e1b4577ec6e2ee71d612ff[m
+Author: Edoardo Rustichini <edorusti@gmail.com>
+Date:   Tue Jul 8 18:57:33 2025 +0200
+
+    Add jupyter notebook for training RF
+
+[33mcommit f565a199cd6640edaa63566495170a1fa9ebd202[m
+Author: Edoardo Rustichini <edorusti@gmail.com>
+Date:   Tue Jul 8 10:20:18 2025 +0200
+
+    Add script to train RF
+
+[33mcommit 8bccff1b37d22ad71eb28845e475795d22a8cc22[m
+Author: Edoardo Rustichini <edorusti@gmail.com>
+Date:   Sat Jul 5 15:31:18 2025 +0200
+
+    Save latents and improve creation of output's dirs
+
+[33mcommit cb70325afe73d9438a827a4afef45a56bef5b559[m
+Author: edo <edorusti@gmail.com>
+Date:   Mon Jun 2 12:06:49 2025 +0200
+
+    antifor

@@ -12,7 +12,7 @@ def visualize(X, y, alg, reduce: bool=False):
     
 
 def main():
-    parser = argparse.ArgumentParser(description='Compress a directory of images using the RecoEncoder')
+    '''arser = argparse.ArgumentParser(description='Compress a directory of images using the RecoEncoder')
     parser.add_argument('--gpu', type=int, default=0, help='GPU index')
     parser.add_argument('--imgs_path', type=str, default='../../real_vs_fake/real-vs-fake', help='Input directory')
     parser.add_argument('input_path', type=str, default='../../input_imgs', help='Input directory')
@@ -46,7 +46,7 @@ def main():
     data['x'] = X_embe
     sns.scatterplot
 
-   ''' plt.figure(figsize=(10, 8))
+    plt.figure(figsize=(10, 8))
     scatter = plt.scatter(X[:, 0], X[:, 1], c=y, cmap='viridis', s=10, alpha=0.7)
 
     legend = plt.legend(*scatter.legend_elements(), title="Class")
