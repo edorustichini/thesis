@@ -19,9 +19,7 @@ class DatasetManager:
             save_dir: path to directory for saving latents
         """
         X, X_hat, labels = [],[],[]
-        progress_bar = tqdm(df.iterrows(), total=len(df), desc="Extracting latents from selected images...")
-        self.coder.print_coder_info()
-        for idx, row in progress_bar:
+        for idx, row in tqdm(df.iterrows(), total=len(df), desc="Extracting latents from selected images..."):
             img_path = os.path.join(img_dir, str(row['path']))
 
             decisions = self.coder.get_latents(img_path, bin_path=None, dec_save_path=None)
@@ -80,9 +78,10 @@ class DatasetManager:
 
     #TODO: volendo si può aggiungere read_csv con eccezione se non trova nulla
 
-def flatten_latents(latents):
+def flatten_latents(latents, labels):
     flat_set = []
     for latent in latents:
         flat = torch.cat([torch.flatten(latent['model_y']), torch.flatten(latent['model_uv'])]).cpu().numpy()
         flat_set.append(flat)
-    return flat_set
+    return flat_set, labels
+
