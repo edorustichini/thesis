@@ -33,7 +33,7 @@ def setup_parser():
     parser.add_argument("--test_csv", default="../../test.csv", help="Path to test's csv file")
     parser.add_argument("-t", "--target", default=None, help="y_hat if quantized latent, else y")
     parser.add_argument("--save", default=False, help="True if wanted to save dataset")
-    
+    parser.add_argument("--model_file")
     parser.add_argument("--models_save_dir", default="/data/lesc/users/rustichini/thesis/models_saved",
                         help="Directory to save models")
     

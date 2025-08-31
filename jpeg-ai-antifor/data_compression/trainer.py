@@ -4,6 +4,7 @@ import torch
 from common import save
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
 from parser import setup_parser
 import pandas as pd
@@ -31,6 +32,16 @@ class ModelManager:
         
         if save_path is not None:
             self.save_model(save_path)
+    
+    def test_model(self, X, y):
+        X, y = self.preprocess_sets(X,y)
+        X, y= shuffle(X, y, random_state=42)
+
+        y_pred = self.model.predict(X)
+
+        print(classification_report(y, y_pred))
+
+        print("Accuray score : " + str(accuracy_score(y, y_pred)))
         
     
     def preprocess_sets(self, X, y):
@@ -42,12 +53,12 @@ class ModelManager:
         return X,y
 
     def save_model(self, save_path):
-        print(self.model.name + "will be saved into"+ save_path)
+        print(self.model.name + "will be saved into "+ save_path + " as "+ self.model.name)
         save(self.model, save_path, self.model.name )
     
 class RandomForest(RandomForestClassifier):
-    def __init__(self, name:str = None, **params):
-        super().__init__(**params)
+    def __init__(self, name, params):
+        super().__init__(param_grid=params)
         if name is None:
             name = f"RF_{params['n_estimators']}trees"
         self.name = name
@@ -61,14 +72,14 @@ class GridSearch(GridSearchCV):
 
 def training(model, X_train, labels, preprocess, target: str):
     
-    trainer = ModelManager(model, preprocess)
+    model_manager = ModelManager(model, preprocess)
     save_model_path = os.path.join(args.models_save_dir,str(args.set_target_bpp)+"_bpp",str(len(X_train)) + "_samples")
 
-    trainer.train_model(X_train, labels, os.path.join(save_model_path, target))
+    model_manager.train_model(X_train, labels, os.path.join(save_model_path, target))
 
 
 def train_process(args, model):
-    X_raw, X_hat_raw, labels = prepare_dataset(args)
+    X_raw, X_hat_raw, labels = prepare_dataset(args, args.train_csv)
     training(model, X_raw, labels,flatten_latents, target='y')
     #del X_raw
     #training(model,X_hat_raw, labels,flatten_latents, target='y_hat')
@@ -79,7 +90,6 @@ if __name__ == "__main__":
     Example of use: 
         python trainer.py ../../input_imgs/ ../../JPEGAI_output/ --set_target_bpp 600 --num_samples 30000 --gpu 0
     """
-
     # Argument parsing
     args = setup_parser()
 
@@ -100,7 +110,7 @@ if __name__ == "__main__":
         'min_samples_leaf': [1,2,4],
         'bootstrap': [True],
     }
-    model_to_train = GridSearch(estimator=RandomForestClassifier(random_state=42, oob_score=True), name=None, params=param_grid)
+    model_to_train = GridSearch(estimator=RandomForestClassifier(random_state=42, oob_score=True, verbose=1, n_jobs=2), name=None, params=param_grid)
     
     train_process(args, model_to_train)
 

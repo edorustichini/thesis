@@ -2,7 +2,7 @@ import os.path
 import pandas as pd
 from tqdm import tqdm
 import torch
-
+from common import save, load_on_RAM
 class DatasetManager:
     "Class for database management"
     def __init__(self, coder):
@@ -19,25 +19,73 @@ class DatasetManager:
             save_dir: path to directory for saving latents
         """
         X, X_hat, labels = [],[],[]
+        
+
+        if save_dir is not None:
+            # Dir to save latents
+            latent_y_path = os.path.join(save_dir, 'y')
+            os.makedirs(latent_y_path, exist_ok=True)
+            latent_y_hat_path = os.path.join(save_dir, 'y_hat')
+            os.makedirs(latent_y_hat_path, exist_ok=True)
+            print("Saving 'y' in "+latent_y_path)
+            print("Saving 'y_hat' in  "+latent_y_hat_path) 
+        
         for idx, row in tqdm(df.iterrows(), total=len(df), desc="Extracting latents from selected images..."):
             img_path = os.path.join(img_dir, str(row['path']))
+            
+
+            y_file = latent_y_path +"/"+ str(idx)
+            y_hat_file = latent_y_hat_path + "/"+str(idx)
+            # checks if altready processed
+            if save_dir is not None:
+                                
+                if os.path.exists(y_file + '.joblib') and os.path.exists(y_hat_file+ '.joblib'):
+                    data = load_on_RAM(y_file + '.joblib')
+                    X.append(data)
+                    data_hat = load_on_RAM(y_hat_file + '.joblib')
+                    X_hat.append(data_hat)
+                    label = row['label']
+                    labels.append(label)
+                    continue
 
             decisions = self.coder.get_latents(img_path, bin_path=None, dec_save_path=None)
             # TODO: gestire caso dove non viene ritornato decisions per qualche problema del coder
             
+            # Check if decisions is None or empty
+            if decisions is None:
+                print(f"Warning: No decisions returned for {row['path']}")
+                #failed_images.append(row['path'])
+                continue
+                
+            if 'CCS_SGMM' not in decisions:
+                print(f"Warning: CCS_SGMM not found in decisions for {row['path']}")
+                #failed_images.append(row['path'])
+                continue
+                    
             latent = decisions['CCS_SGMM']
+
+
 
             y,y_hat = self.get_both_targets(latent)
 
-            if save_dir is not None:
-                # TODO: da implementare ricordandosi che qua non sono elaborati i dati
-                # salvare in un file con idx dell'immagine nel nome, per dare la possibilità di
-                #  controllare se un file con lo stesso nome c'è già per saltare l'elaborazione
-                # questo controllo avrebbe però farlo prima del calcolo
-                pass
+            # Move torch tensors on CPU
+            y_cpu = {
+                'model_y': y['model_y'].cpu(),
+                'model_uv': y['model_uv'].cpu()
+            }
+                
+            y_hat_cpu = {
+                'model_y': y_hat['model_y'].cpu(), 
+                'model_uv': y_hat['model_uv'].cpu()
+            }
 
-            X.append(y)
-            X_hat.append(y_hat)
+            if save_dir is not None:
+                # Saving the "raw" latents
+                save(y_cpu, latent_y_path, idx)
+                save(y_hat_cpu, latent_y_hat_path, idx)
+
+            X.append(y_cpu)
+            X_hat.append(y_hat_cpu)
             labels.append(row['label'])
         return X, X_hat, labels
     
