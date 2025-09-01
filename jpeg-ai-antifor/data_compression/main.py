@@ -6,7 +6,7 @@ from coder import CoderManager
 from dataset import DatasetManager
 
 
-def prepare_dataset(args):
+def prepare_dataset(args, df, save_latent_path):
     # Coder setup
     coder_manager = CoderManager(args)
     
@@ -17,19 +17,18 @@ def prepare_dataset(args):
     df = pd.read_csv(args.train_csv)
 
     #Clean dataframe
-    df_train= df.set_index('id')
-    df_train= df_train.drop(columns=['Unnamed: 0', 'original_path'])
+    df = df.set_index('id')
+    df = df.drop(columns=['Unnamed: 0', 'original_path'])
     if args.num_samples is not None:
-        df_train = dataset_manager.sample_subset(df_train, args.num_samples, args.random_sample)
+        df = dataset_manager.sample_subset(df, args.num_samples, args.random_sample)
     
     
     print("Training set's dataframe")
-    print(df_train)
+    print(df)
 
     # -- Extract latents from images --
-    save_latent_path = os.path.join(args.bin_path,str(args.set_target_bpp)+"_bpp","latent") if args.save else None
     X_raw, X_hat_raw, labels = dataset_manager.build_latent_dataset(
-        df_train,
+        df,
         args.imgs_path,
         save_latent_path)
     

@@ -34,6 +34,8 @@ class ModelManager:
             self.save_model(save_path)
     
     def test_model(self, X, y):
+        print("OOB score for best model found by GridSearch", self.model.oob_score_)
+
         X, y = self.preprocess_sets(X,y)
         X, y= shuffle(X, y, random_state=42)
 
@@ -79,7 +81,9 @@ def training(model, X_train, labels, preprocess, target: str):
 
 
 def train_process(args, model):
-    X_raw, X_hat_raw, labels = prepare_dataset(args, args.train_csv)
+    save_latent_path = os.path.join(args.bin_path,str(args.set_target_bpp)+"_bpp","latent") if args.save else None
+
+    X_raw, X_hat_raw, labels = prepare_dataset(args, args.train_csv, save_latent_path)
     training(model, X_raw, labels,flatten_latents, target='y')
     #del X_raw
     #training(model,X_hat_raw, labels,flatten_latents, target='y_hat')

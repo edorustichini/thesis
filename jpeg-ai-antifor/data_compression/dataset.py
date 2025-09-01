@@ -33,11 +33,10 @@ class DatasetManager:
         for idx, row in tqdm(df.iterrows(), total=len(df), desc="Extracting latents from selected images..."):
             img_path = os.path.join(img_dir, str(row['path']))
             
-
-            y_file = latent_y_path +"/"+ str(idx)
-            y_hat_file = latent_y_hat_path + "/"+str(idx)
             # checks if altready processed
             if save_dir is not None:
+                y_file = latent_y_path +"/"+ str(idx)
+                y_hat_file = latent_y_hat_path + "/"+str(idx)
                                 
                 if os.path.exists(y_file + '.joblib') and os.path.exists(y_hat_file+ '.joblib'):
                     data = load_on_RAM(y_file + '.joblib')
@@ -63,8 +62,6 @@ class DatasetManager:
                 continue
                     
             latent = decisions['CCS_SGMM']
-
-
 
             y,y_hat = self.get_both_targets(latent)
 
