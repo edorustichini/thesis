@@ -130,3 +130,44 @@ def flatten_latents(latents, labels):
         flat_set.append(flat)
     return flat_set, labels
 
+
+def channels_to_tensor(latents,labels, channels_per_image=10):
+
+    # TODO: Aggiungi descrizione
+    if len(latents) != len(labels):
+        raise ValueError("Latents and labels must have same size")
+
+    X, new_labels = [],[]
+
+    k = channels_per_image
+
+    for latent,label in zip(latents,labels):
+        #print(latent['model_y'].shape)
+        latent_y = latent['model_y'][0] # to remove batch size
+        latent_uv = latent['model_uv'][0] # TODO: prendere anche UV concatenando?
+
+        latent = latent_y
+
+        #print(latent.shape)
+        chls_idxs = torch.randperm(latent.shape[0])[:k]
+        #print(chls_idxs)
+
+        for ch in chls_idxs:
+            ch_grid = latent[ch]
+            flat = torch.flatten(ch_grid).numpy()
+            X.append(flat)
+            new_labels.append(label)
+            #print(label, end=" ")
+        #print("\n")
+    return X, new_labels
+
+
+if __name__=="__main__":
+    from parser import setup_parser
+    args = setup_parser()
+
+    from main import prepare_dataset
+    X_raw, X_hat_raw, labels = prepare_dataset(args, args.train_csv)
+    X, labels = channels_to_tensor(X_raw, labels)
+
+    

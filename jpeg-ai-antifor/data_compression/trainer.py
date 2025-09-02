@@ -12,10 +12,11 @@ import os
 import numpy as np
 from sklearn.utils import shuffle
 from main import prepare_dataset
-from dataset import flatten_latents
+from dataset import flatten_latents, channels_to_tensor
 
 
 class ModelManager:
+    # TODO: spostare questa classe in un altro file
     def __init__(self, model, preprocess):
         """
         model must have "fit" function, defined like scikit-learn fit, and a attribute for the name
@@ -26,16 +27,16 @@ class ModelManager:
     def train_model(self, X, y, save_path):
         X, y = self.preprocess_sets(X,y)
         X, y = shuffle(X, y, random_state=42)
+
+        print("\n(num_samples, num_features)")
+        print(f"Train dataset : {X.shape}\n")
         print("Training started")
         self.model.fit(X, y)
         print("Training finished")
         
-        if save_path is not None:
-            self.save_model(save_path)
+        self.save_model(save_path)
     
     def test_model(self, X, y):
-        print("OOB score for best model found by GridSearch", self.model.oob_score_)
-
         X, y = self.preprocess_sets(X,y)
         X, y= shuffle(X, y, random_state=42)
 
@@ -59,15 +60,16 @@ class ModelManager:
         save(self.model, save_path, self.model.name )
     
 class RandomForest(RandomForestClassifier):
-    def __init__(self, name, params):
-        super().__init__(param_grid=params)
+    def __init__(self, name=None, **params):
+        super().__init__(**params)
         if name is None:
-            name = f"RF_{params['n_estimators']}trees"
+            name = f"RF_{params['n_estimators']}estimators"
         self.name = name
+    
 
 class GridSearch(GridSearchCV):
     def __init__(self, estimator, name,params):
-        super().__init__(estimator=estimator, param_grid=params)
+        super().__init__(estimator=estimator, param_grid=params, n_jobs=-1)
         if name is None:
             name = f"grid_search"
         self.name = name
@@ -80,13 +82,14 @@ def training(model, X_train, labels, preprocess, target: str):
     model_manager.train_model(X_train, labels, os.path.join(save_model_path, target))
 
 
-def train_process(args, model):
+def train_process(args, model, preprocess=flatten_latents):
     save_latent_path = os.path.join(args.bin_path,str(args.set_target_bpp)+"_bpp","latent") if args.save else None
 
     X_raw, X_hat_raw, labels = prepare_dataset(args, args.train_csv, save_latent_path)
-    training(model, X_raw, labels,flatten_latents, target='y')
+    training(model, X_raw, labels,preprocess, target='y')
     #del X_raw
     #training(model,X_hat_raw, labels,flatten_latents, target='y_hat')
+
 
 
 if __name__ == "__main__":
@@ -107,18 +110,19 @@ if __name__ == "__main__":
     #    'bootstrap': [True],
     #}
     param_grid = {
-        'n_estimators': [100, 120, 150],
-        'max_features': ['sqrt', 'log2'],
-        'max_depth': [3, 7, 10,20],
-        'min_samples_split': [10, 20],
+        'n_estimators': [75, 100, 125],
+        'max_depth': [20,40,60],
         'min_samples_leaf': [1,2,4],
         'bootstrap': [True],
     }
-    model_to_train = GridSearch(estimator=RandomForestClassifier(random_state=42, oob_score=True, verbose=1, n_jobs=2), name=None, params=param_grid)
+    rf = RandomForestClassifier(random_state=42, oob_score=True, verbose=1)
+    model_to_train =GridSearch(estimator=rf, name=None, params=param_grid)
     
-    train_process(args, model_to_train)
+    train_process(args, model_to_train, preprocess=channels_to_tensor)
 
+    """
     grid = model_to_train
     best_rf = grid.best_estimator_
     print("OOB score for best model found by GridSearch", best_rf.oob_score_)
     print("Best parameters found:", grid.best_params_)
+"""

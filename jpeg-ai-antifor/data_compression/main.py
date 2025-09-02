@@ -6,7 +6,7 @@ from coder import CoderManager
 from dataset import DatasetManager
 
 
-def prepare_dataset(args, df, save_latent_path):
+def prepare_dataset(args, df, save_latent_path=None):
     # Coder setup
     coder_manager = CoderManager(args)
     
@@ -23,7 +23,7 @@ def prepare_dataset(args, df, save_latent_path):
         df = dataset_manager.sample_subset(df, args.num_samples, args.random_sample)
     
     
-    print("Training set's dataframe")
+    print("Dataframe")
     print(df)
 
     # -- Extract latents from images --
