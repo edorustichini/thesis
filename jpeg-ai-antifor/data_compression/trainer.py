@@ -12,7 +12,7 @@ import os
 import numpy as np
 from sklearn.utils import shuffle
 from main import prepare_dataset
-from dataset import flatten_latents, channels_to_tensor
+from dataset import flatten_latents, create_patches_dataset
 
 
 class ModelManager:
@@ -45,6 +45,47 @@ class ModelManager:
         print(classification_report(y, y_pred))
 
         print("Accuray score : " + str(accuracy_score(y, y_pred)))
+
+    def test_model_with_majority_vote(self, X_grouped, y, channels_per_image=10):
+        """
+        Test con voto a maggioranza
+        
+        Args:
+            X_grouped: lista di liste, ogni sottolista contiene i canali di un'immagine
+            y: labels vere (una per immagine)
+            channels_per_image: numero di canali per immagine
+        """
+        predictions_per_image = []
+        
+        print(f"Testing {len(X_grouped)} images with {channels_per_image} channels each...")
+        
+        for i, image_channels in enumerate(X_grouped):
+            # Predici per ogni canale dell'immagine
+            channel_predictions = []
+            
+            for channel in image_channels:
+                channel_reshaped = np.array(channel).reshape(1, -1)
+                pred = self.model.predict(channel_reshaped)[0]
+                channel_predictions.append(pred)
+            
+            # Voto a maggioranza
+            majority_vote = max(set(channel_predictions), key=channel_predictions.count)
+            predictions_per_image.append(majority_vote)
+            
+            if (i + 1) % 100 == 0:
+                print(f"Processed {i + 1}/{len(X_grouped)} images")
+        
+        # Calcola metriche
+        y = np.array(y)
+        predictions_per_image = np.array(predictions_per_image)
+        
+        print("\n=== MAJORITY VOTE RESULTS ===")
+        print(classification_report(y, predictions_per_image))
+        print("Accuracy score:", accuracy_score(y, predictions_per_image))
+        print("Confusion Matrix:")
+        print(confusion_matrix(y, predictions_per_image))
+        
+        return predictions_per_image
         
     
     def preprocess_sets(self, X, y):
@@ -57,7 +98,7 @@ class ModelManager:
 
     def save_model(self, save_path):
         print(self.model.name + "will be saved into "+ save_path + " as "+ self.model.name)
-        save(self.model, save_path, self.model.name )
+        save(self.model, save_path, self.model.name)
     
 class RandomForest(RandomForestClassifier):
     def __init__(self, name=None, **params):
@@ -87,6 +128,7 @@ def train_process(args, model, preprocess=flatten_latents):
 
     X_raw, X_hat_raw, labels = prepare_dataset(args, args.train_csv, save_latent_path)
     training(model, X_raw, labels,preprocess, target='y')
+    # TODO: fai anche y_hat
     #del X_raw
     #training(model,X_hat_raw, labels,flatten_latents, target='y_hat')
 
@@ -110,19 +152,18 @@ if __name__ == "__main__":
     #    'bootstrap': [True],
     #}
     param_grid = {
-        'n_estimators': [75, 100, 125],
-        'max_depth': [20,40,60],
-        'min_samples_leaf': [1,2,4],
-        'bootstrap': [True],
+        'n_estimators': [250, 350, 450],
+        'max_depth': [15, 20, 30],
+        'min_samples_leaf': [ 8, 10, 12, 15],
     }
-    rf = RandomForestClassifier(random_state=42, oob_score=True, verbose=1)
+    rf = RandomForestClassifier(random_state=42, oob_score=True, verbose=0)
     model_to_train =GridSearch(estimator=rf, name=None, params=param_grid)
-    
-    train_process(args, model_to_train, preprocess=channels_to_tensor)
 
-    """
+    train_process(args, model_to_train, preprocess=create_patches_dataset)
+
     grid = model_to_train
     best_rf = grid.best_estimator_
-    print("OOB score for best model found by GridSearch", best_rf.oob_score_)
-    print("Best parameters found:", grid.best_params_)
-"""
+    print("\nOOB score for best model found by GridSearch", best_rf.oob_score_)
+    print("\nBest parameters found:", grid.best_params_)
+    print("\nFinal model: ", best_rf)
+
