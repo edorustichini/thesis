@@ -1,106 +1,118 @@
 \chapter{Stato dell'arte}\label{ch:theory}
 %In questo capitolo sono introdotti a livello teorico i concetti necessari per la comprensione del lavoro svolto
 \section{Immagini fake: rischi, generazione e rilevamento}\label{sec:fakeimg}
-L'aumento negli studi nel campo dei modelli generativi, ossia tecniche di intelligenza artificiale dedicate alla generazione di dati simili a quelli di addestramento, ha portato allo sviluppo di tecnologie in grado di produrre immagini indistinguibili da quelle reali; la diffusione al pubblico di questi strumenti rende la creazione di immagini sintetiche di alto livello di realismo un'operazione semplice ed accessibile anche a utenti non esperti.\\ 
-Si possono distinguere due categorie principali: \textit{cheapfakes}, tecniche di manipolazione meno sofisticate, come \textit{splicing} e \textit{copy-move ecc}, e  \textit{deepfakes}, metodi che fanno uso di intelligenza artificiale. 
-Il termine deepfake infatti nasce dalla combinazione di "deeplearning" e "fake" e vuole indicare la manipolazione di contenuti già esistenti o la generazione di nuovi; su quest'ultimi si concentrerà questo lavoro di tesi.\\
-L'uso più comune dei deepfakes riguarda la produzione e rielaborazione di immagini rappresentanti volti umani per scopi di intrattenimento o marketing; le stesse tecnologie possono però essere utilizzate per fini illeciti come la creazione di profili falsi ma apparentemente autentici, diffusione di disinformazione e produzione di materiale diffamatorio nei confronti di personaggi pubblici e anche privati.
+L'incremento degli studi nel campo dei modelli generativi, ossia tecniche di intelligenza artificiale dedicate alla generazione di dati simili a quelli di addestramento, ha portato allo sviluppo di tecnologie in grado di produrre immagini indistinguibili da quelle reali; la diffusione al pubblico di questi strumenti rende la creazione di immagini sintetiche con alto livello di realismo un'operazione semplice ed accessibile anche a utenti non esperti.\\ 
+Tra le immagini false si possono distinguere due categorie principali: \textit{cheapfakes}, tecniche di manipolazione meno sofisticate, come \textit{splicing} e \textit{copy-move ecc}, e  \textit{deepfakes}, metodi che fanno uso di intelligenza artificiale. 
+Il termine deepfake nasce dalla combinazione di "deeplearning" e "fake" e vuole indicare la manipolazione di contenuti già esistenti o la generazione di nuovi tramite l'utilizzo di modelli di deeplearning; il lavoro si concentrerà su questa categoria.
+L'uso più comune dei deepfakes riguarda la produzione e rielaborazione di immagini rappresentanti volti umani con applicazioni nel mondo dell'intrattenimento o del marketing; le stesse tecnologie possono però essere utilizzate per fini illeciti come la creazione di profili falsi ma apparentemente autentici, diffusione di disinformazione e produzione di materiale diffamatorio nei confronti di personaggi pubblici o privati.
 %\textit{esempi??}
 \paragraph{Manipolazioni di volti} Tra le più comuni manipolazioni si trovano \cite{tolosana2020deepfakes}:
-\textit{entire face synthesis}, ossia la creazione di immagini di volti di persone non reali; \textit{identity swap}, che consiste nella sostituzione del volto di un individuo con quello di un altro; \textit{attribute manipulation}, ovvero la modifica di attributi/caratteristiche del volto e \textit{ expression swap}, che ha lo scopo di modificare l'espressione facciale della persona scelta.
-Questo lavoro si concentra sulla \textit{entire face synthesis} e ci riferiremo principalmente a questa quando si parlerà di generazione e detection.
+\textit{entire face synthesis}, ossia la creazione di immagini di volti di persone non reali; \textit{identity swap}, che consiste nella sostituzione del volto di un individuo con quello di un altro; \textit{attribute manipulation}, ovvero la modifica di attributi/caratteristiche del volto e \textit{expression swap}, che ha lo scopo di modificare l'espressione facciale della persona scelta.\\
+Questo lavoro si concentra sulla \textit{entire face synthesis} e ci riferiremo principalmente a questa parlando di generazione e identificazione  di immagini sintetiche.
 \begin{figure}
     \centering
      \includegraphics[width=1\linewidth]{img/face manipulations.jpg}
      \caption{Esempi per ogni tipo di manipolazione di volti}
      \label{fig:facemanip}
 \end{figure}
-\subsection{Generation}
-Per la creazione di immagini di volti sintetiche sono usate principalmente tre diverse architetture \cite{fernando2025face}: Autoencoders, GANs e Diffusion Models. Comprenderne il funzionamento è fondamentale per capire come sviluppare metodi per identificare le immagini prodotte.
-\paragraph{Autoencoders} Sono architetture composte da un encoder che ha l'obbiettivo di trasformare l'input in una rappresentazione latente compatta ed un decoder, che ricostruisce l'immagine desiderata. Sono usate nell'identity swapping e l'idea è che un encoder comune apprende una rappresentazione latente condivisa, mentre decoder separati si specializzano nella ricostruzione di immagini relative ad un individuo specifico \cite{fernando2025face}
-%. Così le features latenti estratte dal volto di una persona vengono fatte passare nel decoder di un'altra persona
-, così da ottenere uno scambio di identità decodificato la rappresentazione compatta della persona $A$ con il decoder della persona $B$.
-\paragraph{Diffusion Models} I modelli di diffusione sono modelli probabilistici il cui funzionamento si basa su due fasi: nel \textit{forward process} l'immagine viene corrotta introducendo del rumore casuale, mentre nel \textit{reverse process} il modello viene poi addestrato a ricostruire l'immagine iniziale rimuovendo il rumore.\\
-Queste fasi vengono ripetute in modo iterativo e permettono di generare immagini di alta qualità riuscendo a catturare dettagli molto fini; i Diffusion Models attualmente rappresentano lo stato dell'arte in questo campo.
-\subsection{}{GANs}\ref{subsec:GAN}
-GAN è l'architettura proposta nel 2014 da Goodfellow et al.\cite{goodfellow2014generative} composta da due componenti principali: generatore e discriminatore. Il generatore $G$ ha il compito di produrre delle immagini realistiche partendo da un input casuale, mentre il discriminatore $D$ deve distinguere i campioni reali da quelli generati da $G$.\\
-Le due reti vengono addestrate insieme competendo una contro l'altra in un \textit{minimax game} nel quale $G$ deve massimizzare la probabilità che $D$ compia un errore. Inizialmente $G$ genererà immagini rumorose e facilmente identificabili da $D$; quest'ultimo, ricevendo in input sia immagini reali che generate da $G$, fornirà in output la probabilità che un'immagine appartenga all'insieme di immagini autentiche. Il gradiente della funzione di perdita di $D$ verrà usato per aggiornare $G$, che alla fine dell'addestramento avrà imparato a generare campioni abbastanza realistici in modo da ingannare $D$.\\
-Questa architettura è stato il primo salto di qualità nel campo della generazione di immagini e per anni è stata  il punto di riferimento.
-\paragraph{StyleGAN}
-
-\subsection{Detection}
-%Review of Image Forensic Techniques Based on Deep Learning 
-%Media forensic
+\subsection{Generazione}
+I modelli generativi  hanno l'obbiettivo di apprendere la distribuzione dei dati di addestramento e trovare il miglior modo per rappresentarli in modo da generare nuovi campioni simili a quelli originali.
+Per la creazione di immagini di volti sintetiche sono usate principalmente tre diverse architetture \cite{fernando2025face}: Autoencoders, Diffusion Models e GANs. Comprenderne il funzionamento è fondamentale per sviluppare metodi di identificazione delle immagini prodotte.
+\paragraph{Autoencoders} Sono architetture composte da un encoder, che ha l'obbiettivo di trasformare l'input in una rappresentazione latente compatta, ed un decoder che ricostruisce l'immagine desiderata. Sono spesso usate nell'identity swapping sfruttando un encoder comune che apprende una rappresentazione latente condivisa, e decoder separati che si specializzano nella ricostruzione di immagini relative ad un individuo specifico \cite{fernando2025face}, così da ottenere uno scambio di identità decodificando la rappresentazione compatta della persona $A$ con il decoder della persona $B$.
+\paragraph{Diffusion Models} I modelli di diffusione sono modelli generativi il cui funzionamento si basa su due fasi: nel \textit{forward process} un'immagine reale viene corrotta introducendo rumore in un determinato numero di iterazioni, e successivamente nel \textit{reverse process} il modello viene addestrato per sintetizzare un'immagine realistica rimuovendo progressivamente rumore da rumore puro \cite{ho2020denoising}.L'approccio iterativo di queste fasi permette di generare immagini di alta qualità riuscendo a catturare dettagli fini; per questo i Diffusion Models  rappresentano attualmente lo stato dell'arte nel campo della generazione di immagini.
+\subsection{GANs}\label{subsec:GAN}
+GAN (\textit{Generative Adversarial Networks}) è l'architettura proposta nel 2014 da Goodfellow et al. \cite{goodfellow2014generative} composta da due reti neurali: generatore e discriminatore. Il generatore $G$ riceve in input rumore casuale $z$ e lo mappa in un'immagine sintetica $G(z)$; il discriminatore $D$ riceve in input immagini reali o sintetiche ed ha il compito di classificarle.
+Le due reti vengono addestrate contemporaneamente competendo in un \textit{min-max game} nel quale $G$, generando immagini sempre più realistiche, ha l'obbiettivo di massimizzare la probabilità che $D$ compia un errore nella classificazione, mentre $D$ deve minimizzare questa probabilità. L'equazione che descrive questo gioco è la seguente:
+\begin{equation}
+\min_G \max_D V(D,G) = \mathbb{E}_{x \sim p_{data}(x)} [\log D(x)] + \mathbb{E}_{z \sim p_z(z)} [\log(1 - D(G(z)))]
+\end{equation}\label{eq:gan}
+Durante l'addestramento il gradiente della funzione di perdita di $D$ verrà usato per aggiornare $G$. Inizialmente $G$ genererà immagini rumorose e facilmente identificabili come falsi da $D$; con il procedere della fase di addestramento la qualità delle immagini aumenterà fino a diventare abbastanza realistici da ingannare $D$.
+Questa architettura ha rappresentato il primo salto di qualità nel campo della generazione di immagini e per anni è stata  il punto di riferimento.
+Di seguito viene approfondita la variante di GAN usata per creare il dataset di immagini sintetiche per gli esperimenti svolti (vedi sez \ref{sec:dataset}).
+\paragraph{StyleGAN}\label{par:style}
+StyleGAN \cite{karras2019style} presenta un'importante innovazione rispetto alla struttura classica: il generatore non riceve come input direttamente il rumore casuale $z$, ma questo viene prima trasformato da un mapping network $f : \mathcal{Z} \rightarrow \mathcal{W}$ in un vettore $f(z) = w$ in uno spazio latente intermedio $\mathcal{W}$ non vincolato dalla distribuzione del dataset di addestramento, proprietà invece di $\mathcal{Z}$. Successivamente $w$ viene trasformato in una serie di stili $y$ che sono interpretate da ogni layer del generatore come istruzioni su come operare attraverso un'operazione chiamata \textit{Adaptive Instance Normalization} (AdaIN), controllando così il contributo di ogni layer alla generazione dell'immagine. L'architettura è visbile in fig. \ref{fig:stylegan}.
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{img/style-arch.png}
+    \caption{Architettura di StyleGAN descritta in \cite{karras2019style}}
+    \label{fig:stylegan}
+\end{figure}
+L'innovazione di StyleGAN consiste quindi nel modo innovativo di generare immagini basandosi su una collezione di stili; in particolare gli effetti di ogni stile sono localizza nella rete, permettendo di scegliere sottoinsiemi di stili per modificare solo alcuni aspetti dell'immagine.
+Da notare come StyleGAN non modifica la struttura del discriminatore, che rimane quello classico, ma cambia il controllo e la qualità del generatore, permettendo di ottenere immagini più realistiche e con un maggior controllo sugli attributi generati.
+% TODO leggere: https://onlinelibrary.wiley.com/doi/full/10.1111/cgf.14503?casa_token=qfRjy32wWI8AAAAA%3AL8TRQAh8tDCAhA-ve4k-Vu2Vv2sWzt4ZRxmfl2_kAsOZuEM6111KhlckpCk4HFsaOS6H8EEL14OPdA
+\subsection{Rilevamento}
+Data un'immagine $I$ il compito di un detector di immagine sintetiche ha il compito di rendere un valore chiamato detection score che indica la probabilità che $I$ sia sintetica.
+La ricerca riguardante tecniche di rilevamento è in continuo sviluppo dovendo stare al passo delle tecnologie di generazione che riescono sempre ad avere qualità maggiore.
+%Ogni immagine digitale può essere pensata come un insieme di caratteristiche che rappresentano la sua \textit{digital history}: processo di acquisizione, preprocessing interno alla camera, operazioni di editing o di post processing; queste possono essere sfruttate per trovare anomalie che possono indicare presenza di manipolazioni.
+I metodi di rilevamente si possono suddividere in due categorie: quelli classi che si concentrano sull'analisi delle immagini, e quelli che sfruttano modelli di intelligenza artificiale.
 \paragraph{Approcci classici}
-\paragraph{Approci basati su deeplearning}
+L'idea sulla quale si basano i metodi classici 
+I metodi di rilevamento classici si basano sull'analisi delle immagini in ricerca di anomalie lasciate durante la fase di creazione dell'immagine. I \textit{Physical-based methods} cercano di sfruttare inconsistenze nell'immagine, come illuminazione o il riflesso della luce negli occhi. I \textit{Physiological-based Methods} invece investigano l'aspetto semantico delle immagini, analizzando anomalie riguardanti l'asimmetria di attributi dei volti, come diversi colori negli occhi o differenti forme delle pupille.\\
 
-
-
+Altri metodi invece cercano di trovare anomalie nelle caratteristiche "strutturali" delle immagini tra cui: imperfezioni causate dal sistema ottico delle fotocamere nel processo di acquisizione, o processing interno o esterno alla fotocamera.\\
+ Una caratteristica studiata è la PRNU (\textit{Photo Response Non-Uniformity}): ogni fotocamera lascia un pattern di rumore specifico che può essere usato come una sorta di "impronta digitale" della fotocamera; l'assenza di questo pattern in una regione dell'immagine è un forte indicatore di manipolazione.\\
+ Altri approcci consistono nell'analisi dei metadati
+\paragraph{Approcci basati su deeplearning} Gli approcci più recenti sfruttano il deep learning, in particolare si usano reti neurali in modo da estrarre le feature rilevanti delle immagini in modo automatico, senza doverle progettare a mano. \\
+Nel caso di immagini generate da GAN, i classificatori vengono allenati sulla rappresentazione nel dominio della frequenza, dato che è stato dimostrato che le immagini sintetiche presentano delle anomalie in questo dominio. Anche le CNN vengono usate 
+Gli approcci classici riescono ad ottenere buoni risultati su immagini non compresse, ma questa efficienza diminuisce drasticamente quando si lavora con immagini compresse, come quelle condivise sui social media, caso in cui invece i metodi basati su deeplearning riescono a mantenere un buon livello di accuratezza.\\
 \newpage
-
 \section{JPEG AI} \label{sec:jpegai}
-La qualità e la risoluzione delle immagini  è in continua crescita, e così la loro dimensione in formato non compresso; considerando anche l'aumento del numero di immagini prodotte e visualizzate quotidianamente, si è sviluppata la necessità di trovare dei nuovi metodi di compressione, così da permettere una trasmissione e un'archiviazione più efficienti.\\
-Un nuovo promettente paradigma di compressione è chiamato"\textit{Learning-based image compression}" o "\textit{Neural image compression}" e sfrutta l'apprendimento automatico, facendo leva sulle reti neurali per raggiungere livelli di compressione maggiori.
+La qualità e la risoluzione delle immagini  è in continua crescita, e così la loro dimensione in formato non compresso; considerando anche l'aumento del numero di immagini prodotte e visualizzate quotidianamente, si è sviluppata la necessità di trovare dei nuovi metodi di compressione in modo da consentire una trasmissione e un'archiviazione più efficienti.
+Un nuovo promettente paradigma di compressione è chiamato"\textit{Learning-based image compression}" o "\textit{Neural image compression}" e sfrutta l'apprendimento automatico  facendo leva sulle reti neurali per raggiungere livelli di compressione maggiori.
 \subsection{Compressione di immagini}
 \begin{quote} 
     "\textit{A picture is worth a thousand words}"
 \end{quote}
-La compressione dei dati è un problema importante e ampiamente studiato nell'informatica: l'obiettivo è quello di rappresentare un'informazione usando un numero ridotto di bit rispetto alla rappresentazione originale. Nel caso delle immagini questo equivale a rappresentare la stessa informazione visiva, almeno apparentemente, riducendo lo spazio di archiviazione utilizzato.\\
-La compressione si divide in due approcci: lossless,  senza perdita di informazione, e lossy, ovvero con perdita di informazione.
-La compressione senza perdita viene usata quando è richiesta una ricostruzione perfetta dell'immagine originale, per esempio nel caso di immagini mediche. Quella con perdita invece scarta parte dell'informazione, in particolare dei dettagli non percettibili dall'occhio umano, per raggiungere un maggior livello di compressione; è quella usata nella condivisione delle immagini sul web.
+La compressione dei dati è un problema ampiamente studiato nell'informatica: l'obiettivo è quello di rappresentare un'informazione usando un numero ridotto di bit rispetto alla rappresentazione originale. Nel caso delle immagini questo equivale a rappresentare la stessa informazione visiva, almeno apparentemente, riducendo lo spazio di archiviazione utilizzato. La compressione si divide in due approcci: lossless,  senza perdita di informazione, e lossy, ovvero con perdita di informazione.\\
+La compressione senza perdita viene utilizzata nelle applicazioni in cui è richiesta una perfetta ricostruzione dell'immagine originale, per esempio nel caso di immagini mediche. Quella con perdita viene usata per esempio nella condivisione delle immagini sul web perché consente di raggiungere un maggior livello di compressione scartando parte dell'informazione ma mantenendo una qualità accettabile.
 \paragraph{Compressione lossy classica}
-Tradizionalmente il processo per la compressione lossy comprende i seguenti passaggi: inizialmente all'immagine viene applicata una trasformata che mappa i pixel dal dominio spaziale ad uno più efficiente; questi coefficienti vengono poi quantizzati, fase dove si ha la principale perdita di informazione. Infine si effettua una codifica dell'entropia lossless, per trasformare la sequenza di coefficienti quantizzati in un bitstream finale.\\
-Il più importante e diffuso esempio di compressione lossy è JPEG \cite{jpeg}; il suo successo è dovuto al basso costo computazionale necessario per calcolare la DCT (\textit{Trasformata discreta del coseno}), che, applicata a blocchi di $8 \times 8 $ pixel, mappa i pixel dal dominio spaziale a quello della frequenza, permettendo di concentrare la maggior parte dell'informazione rilevante in pochi coefficienti. Dopo questa trasformata i coefficienti vengono quantizzati in base alla loro frequenza, usando maggiore precisione per le frequenze più basse, che contengono più informazione per l'occhio umano, e approssimando maggiormente quelle più alte. \\
-In generale  le tecniche tradizionali sono state progettate "a mano" da ingegneri e ricercatori sfruttando la conoscenza della struttura probabilistica dell'informazione; questi metodi quindi usano una trasformata fissa che ha lo svantaggio di non essere abbastanza flessibile e ottimale per tutti i tipi di immagine.
-
-\subsection*{Learned image processing}
-In questo nuovo paradigma di compressione si fruttano le reti neurali: si possono trovare articoli che propongono delle tecniche di questo tipo già negli anni '90 \cite{sonehara1989image, sicuranza1990artificial}, quando però la loro implementazione non era possibile nella pratica. Recentemente, con i progressi nell'apprendimento automatico e lo sviluppo di hardware specializzato come le GPU, anche il campo del learned image compression si è evoluto.\\
-La differenza con i codec tradizionali come JPEG è che in questo nuovo approccio ogni componente classica (trasformata, quantizzazione, codifica dell'entropia) è sostituita da una rete neurale, portando così alla creazione di un \textit{learned image codec}, ovvero reti neurali che apprendono trasformate \textit{non-lineari} permettendo una rappresentazione più adatta.
-\paragraph{Architettura}La maggior parte delle tecniche sono basate sugli autoencoder \cite{theis2017lossy}, un tipo speciale di rete neurale in grado di imparare la mappatura tra l'input e uno spazio di una rappresentazione latente, spesso chiamato \textit{bottleneck}.\\
+Tradizionalmente il processo per la compressione lossy prevede i seguenti passaggi: inizialmente viene applicata una trasformata all'immagine che mappa i pixel dal dominio spaziale ad uno più efficiente per la compressione, convertendoli in coefficienti. Questi vengono successivamente quantizzati, operazione nella quale avviene la principale perdita di informazione. Infine si effettua una codifica dell'entropia lossless per trasformare la sequenza di coefficienti quantizzati in un bitstream finale.\\
+Il più importante e diffuso esempio di compressione lossy è JPEG \cite{jpeg}; il suo successo è dovuto al basso costo computazionale necessario per il calcolo della DCT (\textit{Trasformata discreta del coseno}), che, applicata a blocchi di $8 \times 8 $ pixel, mappa i pixel dal dominio spaziale a quello della frequenza, permettendo di concentrare la maggior parte dell'informazione rilevante in pochi coefficienti. Dopo questa trasformata i coefficienti vengono quantizzati in base alla loro frequenza, usando maggiore precisione per le frequenze più basse, che contengono più informazione per l'occhio umano, e approssimando maggiormente quelle più alte. \\
+In generale le tecniche tradizionali sono state progettate "a mano" da ingegneri e ricercatori sfruttando la conoscenza della struttura probabilistica dell'informazione ed infatti fanno uso di una trasformata predeterminata e immutabile, avendo lo svantaggio di non essere abbastanza flessibile e ottimale per tutti i tipi di immagine.
+\subsection*{Learned image compression}
+In questo nuovo paradigma di compressione vengono utilizzate le reti neurali: i primi articoli che propongono tecniche di questo tipo risalgono già agli anni '90 \cite{sonehara1989image, sicuranza1990artificial}, quando però la loro implementazione non era possibile nella pratica. Recentemente, con i progressi nell'apprendimento automatico e lo sviluppo di hardware specializzato come le GPU, anche il campo del learned image compression si è evoluto.\\
+La differenza principale con i codec tradizionali come JPEG risiede nel fatto che in questo nuovo approccio ogni componente classica (trasformata, quantizzazione, codifica dell'entropia) è sostituita da una rete neurale, portando alla creazione di un \textit{learned image codec}.
+%, ovvero reti neurali che apprendono trasformate \textit{non-lineari} permettendo una rappresentazione più adatta.
+\paragraph{Architettura}La maggior parte delle tecniche sono basate sugli autoencoder \cite{theis2017lossy}, un tipo di rete neurale in grado di apprendere la mappatura tra l'input e uno spazio di una rappresentazione latente compatta, spesso chiamato \textit{bottleneck}.\\
 L'architettura che ha riscosso più successo è quella proposta da \cite{balle2018variational} che ha dato una prova dell'efficienza di questa tecnica, migliorata successivamente da \cite{minnen2018joint}.\\
-Uno degli aspetti fondamentali di queste architetture è l'approccio end-to-end nel quale tutti i moduli, dall'encoder al decoder, vengono addestrati insieme con una \textit{global loss-function} permettendo un'ottimizzazione "unificata" che massimizza l'efficienza di compressione. Questo rappresenta un grosso vantaggio rispetto ai metodi tradizionali dove invece ogni componente veniva ottimizzata separatamente.\\
-Si possono trovare però anche altri tipi di architettura, e come proposto in \cite{ascenso2019report}, si possono classificare in:
+Uno degli aspetti fondamentali è l'approccio end-to-end nel quale tutti i moduli, dall'encoder al decoder, vengono addestrati insieme mediante un'unica \textit{global loss-function} permettendo un'ottimizzazione "unificata" che massimizza l'efficienza di compressione. Questo rappresenta un vantaggio rispetto ai metodi tradizionali dove invece ogni componente veniva ottimizzata indipendentemente.\\
+Oltre agli autoencoder, si possono trovare anche altri tipi di architettura, e come proposto in \cite{ascenso2019report} si possono classificare in base a questi criteri:
 \begin{itemize}
-    \item tipo di rete neurale utilizzata: oltre a quelli già citati, sono usate anche RNN, per elaborare l'immagine in modo sequenziale, oppure GAN, che consente una miglior qualità visiva dell'immagine ricostruita.
-    \item dimensione dell'unità di codifica: alcune tecniche scelgono di elaborare l'intera immagine, altre decidono di farlo a blocchi di piexl, riducendo la complessità
-    \item strategia del controllo del bit rate: alcuni usano uno stesso modello per comprimere a più bitrate, altri invece usano diversi modelli ottimizzati per un singolo livello di qualità
+    \item tipologia di rete neurale utilizzata: oltre a quelli già citati, sono usate anche RNN, per elaborare l'immagine in modo sequenziale, oppure GAN (descritti in sez. \ref{subsec:GAN})
+    \item dimensione dell'unità di codifica: alcune tecniche scelgono di elaborare l'intera immagine, mentre altre decidono di lavorare a blocchi di pixel, riducendo la complessità
+    \item strategia del controllo del bit rate: alcuni metodi scelgono di usare lo stesso modello per comprimere a più bitrate, altri invece utilzzano diversi modelli ottimizzati per un singolo livello di qualità
 \end{itemize}
-%per andare più nel dettaglio consultare anche sito Neuarl image compression in nutshell cap1
+%TODO: per andare più nel dettaglio consultare anche sito Neuarl image compression in nutshell cap1
+%TODO: nel sito si trova anche una spiegazione migliore di come si svolge l'allenamento
 \subsection{Motivazioni per lo sviluppo di JPEG AI}
 %TODO: leggere  "Learning based image coding", di JPEG che ha motivato sviluppo di JPEG AI
 La principale motivazione dietro lo sviluppo è descritta nel seguente modo:
 \begin{quote}
-    "\textit{The scope of JPEG AI is to create a learning-based image coding standard that provides a single-stream, compact compressed domain representation targeting both human visualization,.., and effectiveperformance for image processing and computer vision tasks, with the goal of supporting royalty-free baseline} \cite{ascenso2023jpegAI}"
-\end{quote}
-L'obbiettivo può essere paragonato alla creazione di un \textit{"linguaggio comune"} che consenta una rappresentazione  efficiente sia per la visione degli umani che delle macchine. Questa scelta risulta interessante considerando che i contenuti digitali non sono più visualizzati esclusivamente dagli umani, ma ci sono molte applicazioni dove sono le macchine i destinatari principali.
-La stessa rappresentazione ricca di informazione potrebbe infatti essere usata sia per task di \textit{image processing}, che \textit{computer vision}, dove l'obbiettivo è estrarre dall'immagine informazione semantica, oppure potrebbe essere ricostruita (vedi fig. \ref{fig:fig:jpeg_frw}).
+    "\textit{The scope of JPEG AI is to create a learning-based image coding standard that provides a single-stream, compact compressed domain representation targeting both human visualization,.., and effective performance for image processing and computer vision tasks, with the goal of supporting royalty-free baseline} \cite{ascenso2023jpegAI}"
+\end{quote} L'obbiettivo può essere paragonato alla creazione di un \textit{"linguaggio comune"} che consenta una rappresentazione efficiente sia per la visione umana che per macchine. Questa scelta risulta rilevante considerando che i contenuti digitali non sono più visualizzati esclusivamente dagli umani, ma in molte applicazioni, come sistemi di sorveglianza intelligente, sono le macchine i destinatari principali.
+L'idea è quindi di usare la stessa rappresentazione compatta e ricca di informazione sia per task di \textit{image processing}, che \textit{computer vision}, dove l'obbiettivo è estrarre dall'immagine informazione semantica, oppure potrebbe essere ricostruita (vedi fig. \ref{fig:fig:jpeg_frw}) per renderla visibile ad un utente umano.
 \begin{figure}
     \centering
     \includegraphics[width=1\linewidth]{img/JPEG AI.png}
     \caption{Framework JPEG AI}
     \label{fig:fig:jpeg_frw}
-\end{figure}\\
-\paragraph{Vantaggi}Un unico bitstream multitask offre due vantaggi: il primo riguarda la riduzione della complessità necessaria a svolgere task di image processing o computer vision, dato che consente di saltare completamente la parte di ricostruzione dell'immagine e di agire direttamente sulla rappresentazione latente; il secondo vantaggio riguarda l'accuratezza di alcune operazioni, infatti essendo stato progettato per contenere tutta l'informazione (anche semantica) contenuta nell'immagine originale, utilizzare direttamente la rappresentazione compatta garantirebbe un'accuratezza migliore di utilizzare l'immagine lossy ricostruita, in particolare per bitrate bassi.\\
-Per ottenere questo l'encoder di JPEG AI deve generare un bitstream indipendente da tutti task, ovvero non ottimizzato per nessun compito specifico, con il requisito di mantenere sempre un alto livello di compressione.
+\end{figure}
+Un unico bitstream multitask offre due vantaggi: il primo riguarda la riduzione della complessità necessaria a svolgere task di image processing o computer vision, consentendo di evitare completamente la parte di ricostruzione dell'immagine e di agire direttamente sulla rappresentazione latente. Il secondo vantaggio riguarda il potenziale incremento nell'accuratezza delle operazioni: essendo JPEG AI stato progettato, ottimizzato ed addestrato per trovare una rappresentazione compatta latente che riesca a contenere l'informazione (anche semantica) contenuta nell'immagine originale, svolgere task direttamente su questa rappresentazione garantirebbe potrebbe garantire prestazioni migliori rispetto ad utilizzare l'immagine lossy ricostruita, specialmente a bitrate bassi.\\
+Per ottenere questo l'encoder di JPEG AI deve generare un bitstream indipendente da tutti task, ossia non ottimizzato per nessun compito specifico, mantenendo però il requisito più importante di un alto livello di compressione.
 \subsection{Architettura}\label{sec:architetturaJPEGAI}
-L'architettura di JPEG AI segue le strutture tipiche di tutti i learning-based codecs,  \cite{minnen2018joint} (vedi \ref{fig:architmin}), e si può dividere in due moduli.
+L'architettura di JPEG AI segue lo schema dei learning-based codec \cite{minnen2018joint} osservabile nella fig.\ref{fig:architmin}; si possono distinguere due moduli.
 \begin{figure}
     \centering
     \includegraphics[width=1\linewidth]{img/architetturaJPEGAI.png}
     \caption{Architettura descritta in \cite{minnen2018joint}}
     \label{fig:architmin}
 \end{figure}
-Il modulo principale è quello che rappresenta l'autoencoder, composto dalla coppia \textit{encoder-decoder}.
-L'encoder apprende una trasformata chiamata \textit{Analysy transform}, che mappa l'immagine $x$ in un tensore latente $y$,  mentre il decoder esegue il processo inverso, \textit{Synthesis transform}, prendendo la versione quantizzata della rappresentazione e trasformandola in immagine.\\
-%TODO: menzionare del fatto che sono Non lineari??
-%TODO: menzionare che spazio latente è spazio più efficiente per info visive?
-Il secondo modulo corrisponde al \textit{Modello per l'entropia}; composto da \textit{Hyperprior}, e \textit{Context-model} e apprende un modello probabilistico dei latenti per svolgere in modo più efficiente la codifica dell'entropia \cite{balle2018variational}. L'\textit{Hyperprior} è composto da un \textit{hyper-encoder}, che estrae da $y$ delle \textit{side-information}  $z$ che vengono quantizzate ${(\hat{z})}$ ed  incluse nel bitstream, e un \textit{hyper-decoder}, che prendendo $z$ aiuta a predire la distribuzione dei latenti. Il \textit{Context model} invece usa i latenti per stimare l'entropia di $\hat{y}_i$ usando gli elemeni già codificati $\hat{y}_{<i}$.\\
-Alcuni approfondimenti sono stati fatti nella sezione \ref{sec:vm}
-\\
-La pipeline di compressione è descritta nei seguenti paragrafi
+Il modulo principale è rappresenta l'autoencoder, composto dalla coppia \textit{encoder-decoder}. L'encoder apprende una trasformata non-lineare chiamata \textit{Analysis transform}, che mappa un'immagine $x$ in una rappresentazione latente più compatta $y$. Il decoder apprendende una trasformata non-lineare chiamata\textit{Synthesis transform} che ricostruisce un'approssimazione dell'immagine orginale partendo dalla versione quantizzata $\hat{y}$ della rappresentazione latente.\\
+Il secondo modulo corrisponde al \textit{Modello per l'entropia}: composto da \textit{Hyperprior} e \textit{Context-model} apprende la distribuzione di probabilità dei valori dei tensori latenti per svolgere in modo più efficiente la codifica dell'entropia \cite{balle2018variational}. L'\textit{Hyperprior} è un autoencoder ausiliario composto da un \textit{hyper-encoder}, che estrae da $y$ delle \textit{side-information/hyper-latent} $z$ che vengono quantizzate ${(\hat{z})}$ ed incluse nel bitstream, ed un \textit{hyper-decoder}, che partendo $\hat{z}$ aiuta a predire la distribuzione dei valori del tensore latente. Il \textit{Context model} utilizzando un approccio autoregressivo, usa il contesto dato dai valori già codificati $\hat{y}_{<i}$ per stimare la distribuzione dei valori.\\
 \paragraph{Fase di Encoding}
-Il processo di encoding di un'immagine si può osservare in \ref{fig:encodingJPEGAI}: inizialmente l'analysis transform, una rete neurale composta da layer non lineari, trasforma l'immagine in un tensore latente $y$; questo viene elaborato dall'hyper-encoder che estrae da $y$ il tensore $z$, poi viene arrotondato ($\hat{z}$) e compresso nell'ultima parte del bitstream. 
-Per la codifica entropica di $y$  viene usato un hyper-scale decoder, che riceve $\hat{z}$,  per genera le varianze necessarie per fare la codifica entropica dei residui, mentre un hyper-mean decoder per produrre una stima dell'immagine originale che viene usata nel modulo di Latent Prediction, che ha il compito di stimare $\mu_y$.
+Il processo di encoding di un'immagine si può osservare in \ref{fig:encodingJPEGAI}: inizialmente l'analysis transform, una rete neurale composta da layer convoluzionali e  attivazioni non lineari, trasforma l'immagine in un tensore latente $y$; questo viene elaborato dall'hyper-encoder che estrae da $y$ il tensore $z$, successivamente arrotondato ($\hat{z}$) e compresso nell'ultima parte del bitstream.
+%Forse sarebbe meglio specificare cosa è ANS
+Per la codifica entropica di $y$  viene usato un hyper-scale decoder, che riceve $\hat{z}$, per generare i parametri, per esempio le varianze, necessarie per descrivere la distribuzione di probabilità dei valori di $y$. Questi parametri vengono usati per fare la codifica entropica dei residui, mentre un hyper-mean decoder produce una stima  della media del tensoe latente, che viene usata nel modulo di Latent Prediction per stimare i valori di $mu_y$.
 Sottraendo $\mu_y$ al latente originale $y$, vengono calcolati i residui; dopo esser stati scalati e arrotondati, sono compressi nel bitstream usando me-tANS.\\
 \begin{figure}
     \centering
@@ -109,22 +121,17 @@ Sottraendo $\mu_y$ al latente originale $y$, vengono calcolati i residui; dopo e
     \label{fig:encodingJPEGAI}
 \end{figure}
 \paragraph{Fase di Decoding}
-Nella fase di decoding (vedi fig. \ref{fig:decodingJPEGAI}) avviene esattamente il processo inverso: inizialmente viene fatta la decodifica delle informazioni ausiliari $\hat{z}$ , usate per decodificare in modo più efficiente i residui, ottenndo $\hat{r}$. Attraverso un modo di latent prediciont vengono nuovamente stimati $\hat{y}$, che è ricevuta dalla synthesis transform che produce un'immagine partendo dalla rappresentazione latente ricevuta.
+Nella fase di decoding (vedi fig. \ref{fig:decodingJPEGAI}) avviene il processo inverso: inizialmente viene fatta la decodifica delle informazioni ausiliari $\hat{z}$, che vengono passate all'hyper-decoder (identico a quello della fase di encoding); i parametri calcolati da quest'ultimo vengono usati per decodificare in modo più efficiente i residui, ottenndo $\hat{r}$. Attraverso un modulo di latent prediction vengono nuovamente stimati $\hat{y}$, che è ricevuta dalla synthesis transform che produce un'immagine partendo dalla rappresentazione latente ricevuta.
 \begin{figure}
     \centering
     \includegraphics[width=1\linewidth]{img/decodingJPEGAI.png}
     \caption{Fase di Decoding di JPEG AI}
     \label{fig:decodingJPEGAI}
 \end{figure}
-\\
-Si rimanda alla sez. \ref{sec:vm} per la descrizione della vera implementazione,
 \paragraph{Risultati ottenuti da JPEG AI}\label{par:riep}
-I primi esperimenti hanno avuto già risultati promettenti, infatti con le prime versioni delle implementazioni, JPEG AI è riuscito a raggiungere un BD-rate gain (parametro standard per la valutazione della compressione) del 28\% \cite{ascenso2023jpegAI}  rispetto a VVC Intra (lo standard attuale più efficiente) usando la configurazione più semplice "\textit{tools-off"}, ovvero usando solo gli strumenti di base per codifica e decodifica. Inoltre è stato notato anche un miglioramento rispetto al livello di qualità soggettiva a parità di bitrate \cite{ascenso2023jpegAI}, constatando l'importanza e il potenziale di questo strumento.
-\section{Riepilogo}
-%TODO: leva i riepiloghi
-%TODO: leggere Deep Architectures for Image Compression: A Critical Review
-%TODO: DIRE CHE già si vede alta compressione.
-%TODO: SPIEGARE COSA CAMBIA FA ALTRI LAVORI (per esempio quello che fa stessa cosa delle facce lo fa usando bridge)
-In letteratura si possono già trovare molte tecniche di Learned image compression \cite{ascenso2019report}, ma l'importanza di JPEG AI  sta nel fatto di essere diventato il primo standard ufficiale di questo tipo \cite{JPEG106thMeeting}; considerando  gli obbiettivi, i requisiti, le key task dichiarate ed i risultati ottenuti \ref{par:riep}, è possibile che questo standard verrà adottato su larga scala, rendendolo un riferimento per studi e applicazioni in futuro.\\
-L'obbiettivo di questa tesi è capire se la rappresentazione latente prodotta dell'encoder di JPEG AI è sufficiente a task di fake detection, testando così le dichiarazioni fatte per la creazione di questo strumento.
+I primi esperimenti hanno riscontrato risultati promettenti: con le prime versioni delle implementazioni JPEG AI è riuscito a raggiungere un BD-rate gain (\textit{Bjøntegaard-Delta Rate}, una metrica per la valutazione dell'efficienza di compressione) del 28\% \cite{ascenso2023jpegAI}  rispetto a VVC Intra (lo standard attdi compressione più effciente attualmente disponibile) usando la configurazione più semplice "\textit{tools-off}" senza ottimizzazioni avanzate. Inoltre è stato notato anche un miglioramento nella qualità soggettiva a parità di bitrate \cite{ascenso2023jpegAI}, confermando il potenziale di questo strumento.
+\subsection{Conseguenze sulla multimedia forensics}
+La creazione di JPEG AI introduce nuove sfide nel campo della multimedia forensics. In \cite{hofer2024taxonomy} viene definito il termine \textit{miscompression} per indicare gli errori creati nella ricostruzione delle immagini che portano ad avere dettagli semantici diversi tra l'immagine reale e quella ricostruita.
+Poichè l'architettura è simile a quella dei generatori di immagini sintetici, in \cite{cannas2024jpeg} viene spiegato come le immagini compresse con JPEG AI presentano artefatti simili a quelle false, che porta i detetctor esistenti classificarli in modo errato rilevandole come immagini sintetiche.
+In \cite{bergmann2025three} vengono proposti tre indizi forensi per il rilevamento e l'analisi di immagini compresse con JPEG AI: correlazioni di colore, quantizzazione nello spazio latente e analisi rate-distortion.
 

@@ -30,10 +30,10 @@ I modelli sono stati addestrati direttamente sulle rappresentazioni latenti prod
 \end{itemize}
 L'encoder genera dei tensori separati per la luminanza e la crominanza, rispettivamente con 160 e 96 canali.
 \textit{parlare del numero di immagini usate}
-\section{Dataset utilizzato}
+\section{Dataset utilizzato}\label{sec:dataset}
 Il dataset usato negli esperimenti è \textit{140k Real and Fake Faces} \cite{140kRealFake}, una raccolta di 140.000 immagini di volti, suddivise in 70.000  immagini reali e 70.000 immagini fake.\\
 Le immagini reali fanno parte del dataset \textit{Flickr-Faces-HQ} (FFHQ) \cite{NVlabsFfhqdataset2025}, e consistono in fotografie di volti umani in alta qualità distinte da altri dataset per la presenza di una grande varietà di soggetti per età ed etnia, ma anche per la presenza di accessori come occhiali o cappelli \cite{karras2019style}; queste immagini sono state collezionate da Flickr, un servizio web che offre la possibilità di pubblicare immagini ad artisti e fotografi.
-Le immagini fake invece fanno parte del dataset \textit{1 Milion Fake Faces} ,un insieme di immagini generate tramite StyleGAN (vedi sez. \ref{}.
+Le immagini fake invece fanno parte del dataset \textit{1 Milion Fake Faces} ,un insieme di immagini generate tramite StyleGAN (vedi sez. \ref{par:style}.
 \paragraph{Suddivisione dati} I dati sono già suddivisi in training set, test set, e validation set, rispettivamente composti da 100000, 20000 e 20000 immagini; ogni insieme mantiene un perfetto bilanciamento tra le due classi. Il perfetto bilanciamento lo rende ideale per l'addestramento, e la suddivisione nei vari set semplifica molto la preparazione dei dati.
 %\subsection{StyleGAN}\label{sec:style}
 %\cite{karras2019style}
