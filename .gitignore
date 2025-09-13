@@ -12,5 +12,9 @@ real_vs_fake/
 input_imgs
 jpeg-ai-antifor/data_compression/cfg
 *.csv
-
+*.idea/
 models_saved/*
+
+*.aux
+*.bbl
+*.synctex.gz
