@@ -4,8 +4,8 @@ from tqdm import tqdm
 import torch
 import sys
 sys.path.append('../')
-from utils import save, load_on_RAM
-from preprocessing import create_patches_dataset
+from common import save, load_on_RAM
+from .preprocessing import create_patches_dataset
 
 class DatasetManager:
     "Class for database management"

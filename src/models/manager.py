@@ -1,5 +1,6 @@
 from sklearn.utils import shuffle
-from utils import save
+sys.path.append('../')
+from common import save
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
 import numpy as np
