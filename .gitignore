@@ -10,7 +10,11 @@ JPEGAI_output/
 output/
 real_vs_fake/
 input_imgs
-jpeg-ai-antifor/data_compression/cfg
+
 *.csv
 
 models_saved/*
+
+src/utils/*
+!src/utils/params.py
+
