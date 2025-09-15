@@ -1,10 +1,12 @@
 from sklearn.utils import shuffle
+import sys
 sys.path.append('../')
 from common import save
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
-
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 import numpy as np
-
 
 class ModelManager:
     def __init__(self, model, preprocess):
@@ -20,9 +22,9 @@ class ModelManager:
 
         print("\n(num_samples, num_features)")
         print(f"Train dataset : {X.shape}")
-        print("\nTraining started")
+        
         self.model.fit(X, y)
-        print("Training finished")
+        
         
         self.save_model(save_path)
     
@@ -47,3 +49,38 @@ class ModelManager:
     def save_model(self, save_path):
         print(self.model.name + "will be saved into "+ save_path + " as "+ self.model.name)
         save(self.model, save_path, self.model.name)
+
+class RandomForest(RandomForestClassifier):
+    def __init__(self, name=None, **params):
+        super().__init__(**params)
+        if name is None:
+            name = f"RF_{params['n_estimators']}estimators"
+        self.name = name  
+
+class GridSearch(GridSearchCV):
+    def __init__(self, estimator, name,params):
+        super().__init__(estimator=estimator, param_grid=params, n_jobs=-1)
+        if name is None:
+            name = f"grid_search"
+        self.name = name
+
+class RandomizedSearch(RandomizedSearchCV):
+    def __init__(self, estimator, name, params, n_iter=70, random_state=42):
+        super().__init__(
+            estimator=estimator, 
+            param_distributions=params, 
+            n_iter=n_iter,
+            n_jobs=-1,
+            random_state=random_state,
+            verbose=1
+        )
+        if name is None:
+            name = f"randomized_search_{n_iter}iter"
+        self.name = name
+
+class SVM(SVC):
+    def __init__(self, name=None, **params):
+        super().__init__(**params)
+        if name is None:
+            name = f"SVM_{params.get('kernel', 'rbf')}"
+        self.name = name
