@@ -17,38 +17,38 @@ class ModelManager:
         self.preprocess = preprocess
     
     def train_model(self, X, y, save_path):
-        X, y = self.preprocess_sets(X,y)
-        X, y = shuffle(X, y, random_state=42)
+        X_train, y_train= self.preprocess_sets(X,y)
+        X_train, y_train = shuffle(X_train, y_train, random_state=42)
 
-        print("\n(num_samples, num_features)")
-        print(f"Train dataset : {X.shape}")
-        
-        self.model.fit(X, y)
-        
-        
+        print("(num_samples, num_features)")
+        print(f"Train dataset : {X_train.shape}")
+
+        self.model.fit(X_train, y_train)
+
         self.save_model(save_path)
     
     def test_model(self, X, y):
-        X, y = self.preprocess_sets(X,y)
-        X, y= shuffle(X, y, random_state=42)
+        X_test, y_test = self.preprocess_sets(X,y)
 
-        y_pred = self.model.predict(X)
+        y_pred = self.model.predict(X_test)
 
-        print(classification_report(y, y_pred))
+        print(classification_report(y_test, y_pred))
 
-        print("Accuray score : " + str(accuracy_score(y, y_pred)))
-    
+        print("Accuray score : " + str(accuracy_score(y_test, y_pred)))
+
     def preprocess_sets(self, X, y):
         # pre-process latents
-        X, y = self.preprocess(X, y)
+        X_new, y_new = self.preprocess(X, y)
+        del X
 
-        y = np.array(y)
-        X = np.array(X)
-        return X,y
+        y_new = np.array(y_new)
+        X_new = np.array(X_new)
+        return X_new,y_new
 
     def save_model(self, save_path):
         print(self.model.name + "will be saved into "+ save_path + " as "+ self.model.name)
         save(self.model, save_path, self.model.name)
+        
 
 class RandomForest(RandomForestClassifier):
     def __init__(self, name=None, **params):

@@ -40,5 +40,5 @@ if __name__ == "__main__":
 
     svm = SVM(random_state=42, probability=True)
     preprocess = create_patches_dataset
-    train_model_no_search(args, model=svm, preprocess=preprocess)
+    train_SVM_random(args,preprocess=preprocess)
 

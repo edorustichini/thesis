@@ -147,8 +147,8 @@ def prepare_dataset(args, df, save_latent_path=None):
         raise ValueError("df must be a file path or a pandas DataFrame")
 
     #Clean dataframe
-    df = df.set_index('id')
-    df = df.drop(columns=['Unnamed: 0', 'original_path'])
+    df = df.set_index('id') if 'id' in df.columns else df
+    df = df.drop(columns=['Unnamed: 0', 'original_path']) if 'Unnamed: 0' in df.columns else df
     if args.num_samples is not None:
         df = dataset_manager.sample_subset(df, args.num_samples, args.random_sample)
     print("Dataframe")

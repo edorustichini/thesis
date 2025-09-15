@@ -15,28 +15,36 @@ def training(args, model, X_train, labels, preprocess, target: str):
     model_manager = ModelManager(model, preprocess)
     save_model_path = os.path.join(args.models_save_dir,str(args.set_target_bpp)+"_bpp",str(len(X_train)) + "_samples")
 
-    model_manager.train_model(X_train, labels, os.path.join(save_model_path, target))
+    model_path_file = os.path.join(save_model_path, target)
+
+    model_manager.train_model(X_train, labels, model_path_file)
+
+    if target=='y':
+        args.model_file_y = os.path.join(model_path_file, model.name + '.joblib' )
+    elif target=='y_hat':
+        args.model_file_y_hat = os.path.join(model_path_file, model.name + '.joblib' )
 
 
 def train_process(args, model, preprocess):
+    model_y = model
+    model_y_hat = model
     save_latent_path = os.path.join(args.bin_path,str(args.set_target_bpp)+"_bpp","latent") if args.save_latents else None
     
     X_raw, X_hat_raw, labels = prepare_dataset(args, args.train_csv, save_latent_path)
 
     print("\nTraining on target y")
     start_time = time.time()
-    training(args, model, X_raw, labels, preprocess, target='y')
+    training(args, model_y, X_raw, labels, preprocess, target='y')
     end_time = time.time()
-    train_time = format_time(end_time - start_time)
-    print(f"Training time: {train_time}")
+    print_time(start_time, end_time)
+
     del X_raw
 
     print("\nTraining on target y_hat")
     start_time = time.time()
-    training(args, model, X_hat_raw, labels, preprocess, target='y_hat')
+    training(args, model_y_hat, X_hat_raw, labels, preprocess, target='y_hat')
     end_time = time.time()
-    train_time = format_time(end_time - start_time)
-    print(f"Training time: {train_time}")
+    print_time(start_time, end_time)
 
 def train_grid_search(args, estimator,param_grid, preprocess):
     """
@@ -49,12 +57,6 @@ def train_grid_search(args, estimator,param_grid, preprocess):
 
     train_process(args, model_to_train, preprocess=preprocess)
     
-    grid = model_to_train
-    best_rf = grid.best_estimator_
-    print("\nOOB score for best model found by GridSearch", best_rf.oob_score_)
-    print("\nBest parameters found:", grid.best_params_)
-    print("\nBest cross-validation score:", grid.best_score_)
-    print("\nFinal model: ", best_rf)
 
 def train_random_search(args, estimator,param_distributions, preprocess):
     
@@ -62,15 +64,16 @@ def train_random_search(args, estimator,param_distributions, preprocess):
         estimator=estimator, 
         name=args.model_name,
         params=param_distributions,
-        n_iter=50
+        n_iter=100
     )
     train_process(args, random_search, preprocess)
     search_results = random_search
-    best_rf = search_results.best_estimator_
-    print("\nOOB score for best model found:", best_rf.oob_score_) if hasattr(best_rf, 'oob_score_') else "N/A"
-    print("\nBest parameters found:", search_results.best_params_)
-    print("\nBest cross-validation score:", search_results.best_score_)
-    print("\nFinal model:", best_rf)
+    best_model = search_results.best_estimator_
+    print("\nBest model found:", best_model)
+    print("\nBest hyperparameters:", search_results.best_params_)
+    print("\nBest score during search:", search_results.best_score_)
+
+    
 
 def train_model_no_search(args, model, preprocess):
     train_process(args, model, preprocess)
@@ -78,6 +81,10 @@ def train_model_no_search(args, model, preprocess):
     print("\nOOB score for model:", fitted_model.oob_score_) if hasattr(fitted_model, 'oob_score_') else "N/A"
     print("\nFinal model:", fitted_model)
 
+def print_time(start_time, end_time):
+    train_time = format_time(end_time - start_time)
+    print(f"Training time: {train_time}")
+    
 if __name__ == "__main__":
     pass
 
