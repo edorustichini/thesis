@@ -1,12 +1,14 @@
+import sys
+from manager import ModelManager, GridSearch, RandomForest
+sys.path.append('../')
 from config import setup_parser
-from ..data.dataset_manager import prepare_dataset
-from ..data.preprocessing import create_patches_dataset
-from ..utils import load_on_RAM
+from common import load_on_RAM
+from data.dataset_manager import prepare_dataset
+from data.preprocessing import create_patches_dataset
 
 import os
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
-from manager import ModelManager, GridSearch, RandomForest
 
 
 def testing(model, X, y, preprocess, target:str):

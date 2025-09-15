@@ -6,7 +6,6 @@ import sys
 sys.path.append('../')
 from common import save, load_on_RAM
 from .preprocessing import create_patches_dataset
-
 class DatasetManager:
     "Class for database management"
     def __init__(self, coder):
@@ -38,7 +37,7 @@ class DatasetManager:
             img_path = os.path.join(img_dir, str(row['path']))
             
             # checks if altready processed
-            if save_dir is not None:
+            if save_dir is not None: # TODO: cambiare facendolo fare sempre
                 y_file = latent_y_path +"/"+ str(idx)
                 y_hat_file = latent_y_hat_path + "/"+str(idx)
                                 
@@ -122,38 +121,60 @@ class DatasetManager:
         final_df = pd.concat([df_1, df_0])
         return final_df
 
-def prepare_dataset(args, df_path : str, save_latent_path=None):
-    # Coder setup
+def prepare_dataset(args, df, save_latent_path=None):
+    """
+    Prepares dataset for training
+    Args:
+        args: arguments from parser
+        df: either path to csv file or pandas dataframe
+        save_latent_path: path to directory for saving latents, if None doesn't save latents
+    Returns:
+        X_raw: list of dicts containing raw latents
+        X_hat_raw: list of dicts containing quantized latents
+        labels: list of labels
+    """
     from coder import CoderManager
     coder_manager = CoderManager(args)
+    coder_manager.setup()
     
     dataset_manager = DatasetManager(coder_manager.coder)
 
-    df = pd.read_csv(df_path)
+    if isinstance(df, str):
+        df = pd.read_csv(df)
+    elif isinstance(df, pd.DataFrame):
+        df = df
+    else:
+        raise ValueError("df must be a file path or a pandas DataFrame")
 
     #Clean dataframe
     df = df.set_index('id')
     df = df.drop(columns=['Unnamed: 0', 'original_path'])
     if args.num_samples is not None:
         df = dataset_manager.sample_subset(df, args.num_samples, args.random_sample)
-    
     print("Dataframe")
     print(df)
+    if save_latent_path is not None:
+        df_save_path = os.path.join(args.models_save_dir, f"train_df_{args.set_target_bpp}bpp_{args.num_samples}samples.csv")
+        print(f"Saving dataframe to {df_save_path}")
+        df.to_csv(df_save_path)
 
     # -- Extract latents from images --
     X_raw, X_hat_raw, labels = dataset_manager.build_latent_dataset(
         df,
-        args.imgs_path,
+        args.input_path,
         save_latent_path)
     
     return X_raw, X_hat_raw, labels
 
-if __name__=="__main__":
-    from parser import setup_parser
+def main():
+    from config import setup_parser
     args = setup_parser()
+    
+    save_latent_path = os.path.join(args.bin_path,str(args.set_target_bpp)+"_bpp","latent") if args.save_latents else None
+    X_raw, X_hat_raw, labels = prepare_dataset(args, args.train_csv, save_latent_path)
+    #X, labels = create_patches_dataset(X_raw, labels)
 
-    X_raw, X_hat_raw, labels = prepare_dataset(args, args.train_csv)
-    X, labels = create_patches_dataset(X_raw, labels)
-
+if __name__=="__main__":
+    main()
 
     

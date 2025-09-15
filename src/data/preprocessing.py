@@ -52,9 +52,9 @@ def create_patches_dataset(latents, labels, patch_size=1):
         X_patches.append(patch)
         y_patches.append(label)
     
-    print(f"Created {len(X_patches)} patches from {len(latents)} latents.")
+    #print(f"Created {len(X_patches)} patches from {len(latents)} latents.")
     print(f"Each patch has shape: {X_patches[0].shape}")
-    print(f"Labels shape: {len(y_patches)}")
+    #print(f"Labels shape: {len(y_patches)}")
     
     return X_patches, y_patches
 

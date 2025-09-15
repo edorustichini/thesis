@@ -9,6 +9,8 @@ class CoderManager:
     def __init__(self, args):
         self.args = args or setup_parser()
         self.coder = None
+
+    def setup(self):
         self.setup_device()
         self.setup_coder()
     

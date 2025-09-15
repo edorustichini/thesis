@@ -48,7 +48,7 @@ from tqdm import tqdm
 from multiprocessing import cpu_count
 # --- Setup the JPEG-AI software suite --- #
 sys.path.append('../')
-from .utils.params import *
+from utils.params import JPEG_AI_PATH
 sys.path.append(JPEG_AI_PATH) # Add the jpeg-ai-reference-software to the path
 from src.codec import get_downloader
 from src.codec.common import Image
