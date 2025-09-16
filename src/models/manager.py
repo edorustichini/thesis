@@ -1,7 +1,8 @@
+import os
 from sklearn.utils import shuffle
 import sys
 sys.path.append('../')
-from common import save
+from common import load_on_RAM, save
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
@@ -47,7 +48,12 @@ class ModelManager:
 
     def save_model(self, save_path):
         print(self.model.name + "will be saved into "+ save_path + " as "+ self.model.name)
-        save(self.model, save_path, self.model.name)
+        print(self.model)
+        model_path = save(self.model, save_path, self.model.name)
+
+        
+        
+    
         
 
 class RandomForest(RandomForestClassifier):
@@ -55,7 +61,9 @@ class RandomForest(RandomForestClassifier):
         super().__init__(**params)
         if name is None:
             name = f"RF_{params['n_estimators']}estimators"
-        self.name = name  
+        self.name = name
+    def __str__(self):
+        return super().__str__()
 
 class GridSearch(GridSearchCV):
     def __init__(self, estimator, name,params):
@@ -63,6 +71,8 @@ class GridSearch(GridSearchCV):
         if name is None:
             name = f"grid_search"
         self.name = name
+    def __str__(self):
+        return super().__str__()
 
 class RandomizedSearch(RandomizedSearchCV):
     def __init__(self, estimator, name, params, n_iter=70, random_state=42):
@@ -77,6 +87,9 @@ class RandomizedSearch(RandomizedSearchCV):
         if name is None:
             name = f"randomized_search_{n_iter}iter"
         self.name = name
+    def __str__(self):
+        
+        return str(self.best_estimator_)
 
 class SVM(SVC):
     def __init__(self, name=None, **params):
@@ -84,3 +97,5 @@ class SVM(SVC):
         if name is None:
             name = f"SVM_{params.get('kernel', 'rbf')}"
         self.name = name
+    def __str__(self):
+        return super().__str__()

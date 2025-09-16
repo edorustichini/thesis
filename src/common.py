@@ -6,7 +6,8 @@ def save(obj, save_dir, name):
     os.makedirs(save_dir, exist_ok=True)
     model_path = os.path.join(save_dir, name + ".joblib")
     joblib.dump(obj, model_path)
-    
+    return model_path
+
 def load_on_RAM(file_path):
     obj = joblib.load(file_path)
     return obj

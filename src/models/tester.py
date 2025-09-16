@@ -15,7 +15,7 @@ def testing(model, X, y, preprocess, target:str):
     """
     print("Test on target " + target)
     model_manager = ModelManager(model, preprocess)
-    model_manager.test_model(X,y)
+    model_manager.test_model(X,y) 
 
 
 def test_process(args,model_file_path_y: str = None, model_file_path_y_hat: str = None):

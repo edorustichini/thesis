@@ -121,7 +121,7 @@ class DatasetManager:
         final_df = pd.concat([df_1, df_0])
         return final_df
 
-def prepare_dataset(args, df, save_latent_path=None):
+def prepare_dataset(args, coder, df, save_latent_path=None):
     """
     Prepares dataset for training
     Args:
@@ -133,11 +133,8 @@ def prepare_dataset(args, df, save_latent_path=None):
         X_hat_raw: list of dicts containing quantized latents
         labels: list of labels
     """
-    from coder import CoderManager
-    coder_manager = CoderManager(args)
-    coder_manager.setup()
-    
-    dataset_manager = DatasetManager(coder_manager.coder)
+
+    dataset_manager = DatasetManager(coder)
 
     if isinstance(df, str):
         df = pd.read_csv(df)
@@ -151,10 +148,10 @@ def prepare_dataset(args, df, save_latent_path=None):
     df = df.drop(columns=['Unnamed: 0', 'original_path']) if 'Unnamed: 0' in df.columns else df
     if args.num_samples is not None:
         df = dataset_manager.sample_subset(df, args.num_samples, args.random_sample)
-    print("Dataframe")
-    print(df)
-    if save_latent_path is not None:
-        df_save_path = os.path.join(args.models_save_dir, f"train_df_{args.set_target_bpp}bpp_{args.num_samples}samples.csv")
+    #print("Dataframe")
+    #print(df)
+    if save_latent_path is not None and args.train_csv is "../../train.csv": # FIXME: non ha senso
+        df_save_path = os.path.join(args.models_save_dir, f"df_{args.set_target_bpp}bpp_{args.num_samples}samples.csv")
         print(f"Saving dataframe to {df_save_path}")
         df.to_csv(df_save_path)
 

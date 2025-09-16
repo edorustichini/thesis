@@ -1,14 +1,12 @@
 import sys
-sys.path.append('../')
-from config import setup_parser
 import os
 import numpy as np
 import time
-from data.dataset_manager import  prepare_dataset
-from data.preprocessing import flatten_latents, create_patches_dataset
-from manager import ModelManager, GridSearch, RandomForest, RandomizedSearch
-from sklearn.ensemble import RandomForestClassifier
-from common import format_time
+
+
+
+from manager import ModelManager, GridSearch, RandomForest, RandomizedSearch, SVM
+from pipeline import Pipeline
 
 
 def training(args, model, X_train, labels, preprocess, target: str):
@@ -24,67 +22,52 @@ def training(args, model, X_train, labels, preprocess, target: str):
     elif target=='y_hat':
         args.model_file_y_hat = os.path.join(model_path_file, model.name + '.joblib' )
 
-
-def train_process(args, model, preprocess):
-    model_y = model
-    model_y_hat = model
-    save_latent_path = os.path.join(args.bin_path,str(args.set_target_bpp)+"_bpp","latent") if args.save_latents else None
-    
-    X_raw, X_hat_raw, labels = prepare_dataset(args, args.train_csv, save_latent_path)
-
-    print("\nTraining on target y")
-    start_time = time.time()
-    training(args, model_y, X_raw, labels, preprocess, target='y')
-    end_time = time.time()
-    print_time(start_time, end_time)
-
-    del X_raw
-
-    print("\nTraining on target y_hat")
-    start_time = time.time()
-    training(args, model_y_hat, X_hat_raw, labels, preprocess, target='y_hat')
-    end_time = time.time()
-    print_time(start_time, end_time)
-
 def train_grid_search(args, estimator,param_grid, preprocess):
     """
     Train a model using Grid Search for hyperparameter tuning.
     """
-    model_to_train =GridSearch(
+    grid_search =GridSearch(
         estimator=estimator, 
         name=args.model_name, 
         params=param_grid)
-
-    train_process(args, model_to_train, preprocess=preprocess)
     
-
+    exp = Pipeline(
+        model = grid_search,
+        train_preprocess=preprocess)
+    exp.run_training_only()
+    search_results = grid_search
+    best_model = search_results.best_estimator_
+    print("\nBest model found:", best_model)
+    print("\nBest hyperparameters:", search_results.best_params_)
+    print("\nBest score during search:", search_results.best_score_)
+    
 def train_random_search(args, estimator,param_distributions, preprocess):
     
     random_search = RandomizedSearch(
         estimator=estimator, 
         name=args.model_name,
         params=param_distributions,
-        n_iter=100
+        n_iter=50
     )
-    train_process(args, random_search, preprocess)
+    exp = Pipeline(
+        model = random_search,
+        train_preprocess=preprocess
+    )
+    exp.run_training_only()
     search_results = random_search
     best_model = search_results.best_estimator_
     print("\nBest model found:", best_model)
     print("\nBest hyperparameters:", search_results.best_params_)
     print("\nBest score during search:", search_results.best_score_)
 
-    
-
 def train_model_no_search(args, model, preprocess):
-    train_process(args, model, preprocess)
+    pass
+    #train_process(args, model, preprocess)
     fitted_model = model
     print("\nOOB score for model:", fitted_model.oob_score_) if hasattr(fitted_model, 'oob_score_') else "N/A"
     print("\nFinal model:", fitted_model)
 
-def print_time(start_time, end_time):
-    train_time = format_time(end_time - start_time)
-    print(f"Training time: {train_time}")
-    
+ 
 if __name__ == "__main__":
     pass
 

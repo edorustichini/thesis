@@ -6,9 +6,10 @@ from trainer import train_grid_search, train_random_search, train_model_no_searc
 import sys
 sys.path.append('../')
 from config import setup_parser
+from pipeline import Pipeline
 from data.preprocessing import flatten_latents, single_patch_per_latent, multiple_patches_per_latent
 
-def train_RF_grid(args, preprocess):
+def train_RF_grid_search(args, preprocess):
     param_grid = {
         'n_estimators': [100, 200, 300],
         'max_depth': [None, 10, 20, 30],
@@ -19,7 +20,7 @@ def train_RF_grid(args, preprocess):
     rf = RandomForestClassifier(random_state=42, oob_score=True, verbose=0)
     train_grid_search(args, rf, param_grid, preprocess)
 
-def train_RF_random(args, preprocess):
+def train_RF_random_search(args, preprocess):
     import scipy.stats as stats
     single_param_distributions = {
     'n_estimators': stats.randint(100, 300), 
@@ -32,19 +33,35 @@ def train_RF_random(args, preprocess):
     }
 
     param_distributions = [
-    single_param_distributions, # Small trees
-    { # Large trees
-        'n_estimators': stats.randint(300, 800),
-        'max_depth': stats.randint(10, 51),
-        'min_samples_leaf': stats.randint(2, 15),
-        'max_features': ['sqrt'],
-        'bootstrap': [True]
-    }
+        #single_param_distributions, # Small trees
+        # Large trees
+        {
+            'n_estimators': stats.randint(500, 800),
+            'max_depth': stats.randint(25, 51),
+            'min_samples_leaf': [2],
+            'max_features': ['sqrt'],
+            'bootstrap': [True]
+        }
     ]
-    
-    rf = RandomForestClassifier(random_state=42, oob_score=True, verbose=0)
-    train_random_search(args, rf, param_distributions, preprocess)
+    estimator = RandomForestClassifier(random_state=42, oob_score=True, verbose=0)
+    random_search = RandomizedSearch(
+        estimator=estimator, 
+        name=args.model_name,
+        params=param_distributions,
+        n_iter=50
+    )
+    exp = Pipeline(
+        model = random_search,
+        train_preprocess=preprocess
+    )
+    exp.run_training_only()
+    search_results = random_search
+    best_model = search_results.best_estimator_
+    print("\nBest model found:", best_model)
+    print("\nBest hyperparameters:", search_results.best_params_)
+    print("\nBest score during search:", search_results.best_score_)
 
+    #train_random_search(args, rf, param_distributions, preprocess)
 
 if __name__ == "__main__":
     args = setup_parser()
@@ -52,12 +69,7 @@ if __name__ == "__main__":
     # Train
     rf = RandomForestClassifier(random_state=42, oob_score=True, verbose=0)
     preprocess = single_patch_per_latent
-    #train_grid_search(args, estimator=rf, preprocess=preprocess)
-
-    train_RF_random(args, preprocess=preprocess)
-
-    #test_process(args, model_file_path_y=args.model_file_y, model_file_path_y_hat=args.model_file_y_hat)
     
-    
+    train_RF_random_search(args, preprocess=preprocess)
 
-    #train_model_no_search(args, model=rf, preprocess=preprocess)
+    
