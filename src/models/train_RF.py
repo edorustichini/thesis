@@ -1,4 +1,4 @@
-from manager import GridSearch, RandomizedSearch
+from manager import GridSearch, RandomForest, RandomizedSearch
 from tester import test_process
 from sklearn.ensemble import RandomForestClassifier
 from trainer import train_grid_search, train_random_search, train_model_no_search
@@ -32,7 +32,7 @@ def train_RF_random(args, preprocess):
     }
 
     param_distributions = [
-    single_param_distributions, # Small trees
+    #single_param_distributions, # Small trees
     { # Large trees
         'n_estimators': stats.randint(300, 800),
         'max_depth': stats.randint(10, 51),
@@ -50,14 +50,16 @@ if __name__ == "__main__":
     args = setup_parser()
     
     # Train
-    rf = RandomForestClassifier(random_state=42, oob_score=True, verbose=0)
+    rf = RandomForest(random_state=42, oob_score=True, verbose=0)
     preprocess = single_patch_per_latent
     #train_grid_search(args, estimator=rf, preprocess=preprocess)
 
+    args.num_samples = 20000
     train_RF_random(args, preprocess=preprocess)
 
     #test_process(args, model_file_path_y=args.model_file_y, model_file_path_y_hat=args.model_file_y_hat)
     
     
-
-    #train_model_no_search(args, model=rf, preprocess=preprocess)
+    
+    
+    train_model_no_search(args, model=rf, preprocess=preprocess)

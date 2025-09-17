@@ -34,6 +34,7 @@ def train_process(args, model, preprocess):
 
     print("\nTraining on target y")
     start_time = time.time()
+    print(labels)
     training(args, model_y, X_raw, labels, preprocess, target='y')
     end_time = time.time()
     print_time(start_time, end_time)
@@ -41,6 +42,7 @@ def train_process(args, model, preprocess):
     del X_raw
 
     print("\nTraining on target y_hat")
+    print(labels)
     start_time = time.time()
     training(args, model_y_hat, X_hat_raw, labels, preprocess, target='y_hat')
     end_time = time.time()
@@ -64,7 +66,7 @@ def train_random_search(args, estimator,param_distributions, preprocess):
         estimator=estimator, 
         name=args.model_name,
         params=param_distributions,
-        n_iter=100
+        n_iter=50,
     )
     train_process(args, random_search, preprocess)
     search_results = random_search

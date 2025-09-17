@@ -39,8 +39,7 @@ def create_patches_dataset(latents, labels, patch_num=1):
     X_patches = []
     y_patches = []
 
-    H = latent_y.shape[2]  
-    W = latent_y.shape[3]  
+    _, C, H, W = latents[0]['model_y'].shape  # assuming all latents have the same shape 
 
     import random
     points = [(random.randint(0, H-1), random.randint(0, W-1)) for _ in range(patch_num)] # same points for all latents

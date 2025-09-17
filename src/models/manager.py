@@ -35,7 +35,7 @@ class ModelManager:
         print(classification_report(y_test, y_pred))
 
         print("Accuray score : " + str(accuracy_score(y_test, y_pred)))
-
+        print("Confusion matrix : \n" + str(confusion_matrix(y_test, y_pred)))  
     def preprocess_sets(self, X, y):
         # pre-process latents
         X_new, y_new = self.preprocess(X, y)
@@ -54,12 +54,17 @@ class RandomForest(RandomForestClassifier):
     def __init__(self, name=None, **params):
         super().__init__(**params)
         if name is None:
-            name = f"RF_{params['n_estimators']}estimators"
+            name = f"RF_{params['n_estimators']}estimators" if 'n_estimators' in params else "RF_default"
         self.name = name  
 
 class GridSearch(GridSearchCV):
     def __init__(self, estimator, name,params):
-        super().__init__(estimator=estimator, param_grid=params, n_jobs=-1)
+        super().__init__(
+            estimator=estimator,
+            param_grid=params,
+            n_jobs=-1,
+            cv=3
+        )
         if name is None:
             name = f"grid_search"
         self.name = name
@@ -72,7 +77,8 @@ class RandomizedSearch(RandomizedSearchCV):
             n_iter=n_iter,
             n_jobs=-1,
             random_state=random_state,
-            verbose=1
+            verbose=1,
+            cv=3
         )
         if name is None:
             name = f"randomized_search_{n_iter}iter"
