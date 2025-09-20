@@ -116,8 +116,9 @@ class DatasetManager:
             df_1 = df[df['label'] == 1].sample(N // 2)
             df_0 = df[df['label'] == 0].sample(N // 2)
         else:
-            df_1 = df[df['label'] == 1][:N // 2]
-            df_0 = df[df['label'] == 0][:N // 2]
+            df_1 = df[df['label'] == 1].iloc[:N // 2]
+            df_0 = df[df['label'] == 0].iloc[:N // 2]
+
         final_df = pd.concat([df_1, df_0])
         return final_df
 
@@ -133,6 +134,9 @@ def prepare_dataset(args, df, save_latent_path=None):
         X_hat_raw: list of dicts containing quantized latents
         labels: list of labels
     """
+
+    save_latent_path = None if not args.save_latents else save_latent_path
+
     from coder import CoderManager
     coder_manager = CoderManager(args)
     coder_manager.setup()
@@ -151,9 +155,9 @@ def prepare_dataset(args, df, save_latent_path=None):
     df = df.drop(columns=['Unnamed: 0', 'original_path']) if 'Unnamed: 0' in df.columns else df
     if args.num_samples is not None:
         df = dataset_manager.sample_subset(df, args.num_samples, args.random_sample)
-    print("Dataframe")
-    print(df)
-    if save_latent_path is not None:
+    #print("Dataframe")
+    #print(df)
+    if save_latent_path is not None and len(df)> 30000:
         df_save_path = os.path.join(args.models_save_dir, f"train_df_{args.set_target_bpp}bpp_{args.num_samples}samples.csv")
         print(f"Saving dataframe to {df_save_path}")
         df.to_csv(df_save_path)

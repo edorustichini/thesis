@@ -15,7 +15,7 @@ def setup_parser():
     coder_group = parser.add_argument_group('coder', 'argument group for coder details')
     
     coder_group.add_argument('--gpu', type=int, default=0, help='GPU index')
-    coder_group.add_argument('--set_target_bpp', type=int, default=None, help='Set the target bpp '
+    coder_group.add_argument('--set_target_bpp', type=int, default=1, help='Set the target bpp '
                                                                            '(multiplied by 100)')
     coder_group.add_argument('--models_dir_name', type=str, default=JPEG_AI_PATH + "/models",
                              help='Directory name for the '
@@ -29,7 +29,7 @@ def setup_parser():
     training_group.add_argument('--num_samples', type=int, default=None, help='Number of samples to train on')
     training_group.add_argument('--num_samples_test', type=int, default=None, help='Number of samples to test on')
     training_group.add_argument('--random_sample', type=bool, default=False, help='Sample')
-    training_group.add_argument("--train_csv", default="../../train.csv", help="Path to dataset's csv file")
+    training_group.add_argument("--train_csv", default="/data/lesc/users/rustichini/thesis/models_saved/FLATTEN/train_df_600bpp_35000samples.csv", help="Path to dataset's csv file")
     training_group.add_argument("--models_save_dir", default="../../models_saved/",
                         help="Directory to save models")
     training_group.add_argument("--model_name", default="RF", help="Model name")
