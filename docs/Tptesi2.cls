@@ -107,7 +107,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%   TPtesi   %%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\newcommand{\linespacing}{1.35}
+\newcommand{\linespacing}{1.5}
 \renewcommand{\baselinestretch}{\linespacing}
 \newcommand{\rilegatura}{10mm}
 \addtolength\oddsidemargin{\rilegatura}

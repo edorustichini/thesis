@@ -17,71 +17,161 @@ Gli esperimenti sono stati condotti tramite connessione ssh ad un server del lab
 \end{itemize}
 Le GPU presenti sono state fondamentali per svolgere l'estrazione delle rappresentazioni latenti delle immagini tramite l'uso dell'encoder neurale di JPEG AI in tempi rapidi, mentre l'addestramento e valutazione dei modelli di classificazione sono stati completamente svolti sulle CPU disponibili.
 \section{Codice sorgente del lavoro}
-Il codice sorgente del lavoro è stato versionato tramite \texttt{git} e reso disponibile su GitHub all'indirizzo \url{https://github.com/edorustichini/thesis.git}, ed è sviluppato in Python. Nella cartella \texttt{src} sono presenti gli script per la gestione degli esperimenti. La classe usata per 
-\subsection{Pipeline di addestramento e valutazione}
-La sequenza per l'addestramento è la seguente:
-Estrazione latenti ->
-\section{Esperimenti condotti}
-Come detto l'obbiettivo era la valutazione dell'utilizzabilità delle rappresentazioni latenti estratte dall'encoder di JPEG AI per task di deepfake detection.\\
-Gli esperimenti sono stati condotti per ogni classificatore scelto su diverse variando 4 fattori principali: algoritmo, metodo di preprocessing delle feature estratte, componente scelta e \texttt{target\_bpp}. Nella tabella \ref{tab:experimentalfactors} è riportato un riepilogo dei fattori considerati.
+Il codice sorgente sviluppato è reso disponibile tramite GitHub all'indirizzo \url{https://github.com/edorustichini/thesis.git}. L'intero progetto è sviluppato in Python, e nella cartella \texttt{src} sono presenti gli script per il setup degli esperimenti, metodi per processare i dati, e script per l'addestramento e valutazione dei modelli. Sono inoltre presenti dei notebook Jupyter per l'analisi dei risultati.\\
+L'estrazione delle rappresentazioni latenti delle immagini viene fatta utilizzando il software  ufficiale di riferimento di JPEG AI, disponibile all'indirizzo \url{https://gitlab.com/wg1/jpeg-ai/jpeg-ai-reference-software}.
+\section{Esperimenti condotti}\label{sec:experiments}
+Come dichiarato nelle sezioni precedenti, l'obbiettivo del lavoro consiste nel verificare l'efficacia della codifica JPEG AI nel compito di identificazione di immagini generate.\\
+Gli esperimenti sono stati condotti per ogni classificatore scelto variando 3 fattori principali:  metodo di preprocessing delle feature estratte, componente scelta e \texttt{target\_bpp}. Nella tabella \ref{tab:experimentalfactors} è riportato un riepilogo dei fattori considerati.
 \begin{table}[H]
 \centering
-\caption{Fattori e loro varianti considerati durante gli esperimenti}\label{tab:experimentalfactors}
+\caption{Fattori considerati durante gli esperimenti}\label{tab:experimentalfactors}
 \begin{tabularx}{\textwidth}{l X}
 \toprule
 \textbf{Fattore} & \textbf{Valori / Descrizione} \\
 \midrule
-Compressione (Bpp) & Per capire l'effetto dei livello di compressione sui risultati \\
+Compressione (Bpp) & 12bpp, 6bpp. Usati per capire l'effetto del livello di compressione sui risultati \\
 \midrule
-Componente target & Y vs YUV, perché in realtà sono separate (CCS, vedi \ref{subsec:latenti}): \\
+Componente target & Y e YUV \\
 & - Y: classificatori allenati esclusivamente sulla componente della luminanza. \\
 & - YUV: classificatori allenati su tutte e tre le componenti (Y, U, V) concatenandole. \\
 \midrule
-Preprocessing & Come descritto in \ref{sec:preprocessing} diversi metodi di preprocessing sono stati testati.: \\
-& - Flatten: vettorizzazione semplice delle feature. \\
-& - Single Patch: estrazione di una patch per immagine. \\
-& - Multiple Patches: estrazione di più patch per immagine. \\
+Preprocessing & Come descritto in \ref{sec:preprocessing} sono stati esplorati diversi metodi di preprocessing dei latenti prima dell'addestramento: Flatten, Single Patch e Multiple Patches. \\
 \bottomrule
 \end{tabularx}
 \end{table}
-Il metodo di estrazione influenza la logica di campionamento dei dati di training e le modalità di valutazione del modello; nella tabella \ref{tab:preprocessing_methods} vengono riportati i dettagli per ogni metodo.
+Il metodo di preprocessing delle feature influenza la struttura del dataset di addestramento e le modalità di valutazione del modello. Nella tabella \ref{tab:preprocessing_methods} viene proposta una schematizzazione dei metodi.
 \begin{table}[H]
 \centering
-\caption{Confronto tra metodi di preprocessing delle feature. $C_y$: Numero di canali nella componente di luminanza, $C_{uv}$: Numero di canali nelle componenti di crominanza, N: Numero di patch estratte per immagine}\label{tab:preprocessing_methods}
+\caption{Confronto tra metodi di preprocessing delle feature.}\label{tab:preprocessing_methods}
 \begin{tabularx}{\textwidth}{l c c}
 \toprule
-\textbf{Preprocessing Method} & \textbf{Samples per Image} & \textbf{Feature Dimension} \\
+\textbf{Method} & \textbf{Samples per Image} & \textbf{Feature Dimension} \\
 \midrule
-Flatten Latents         & 1 & 65536 \\
+Flatten Latents (Y)        & 1 & $C_y \cdot H \cdot W = 40960$ \\
+Flatten Latents (YUV)     & 1 & $(C_y +C_{uv})\cdot H \cdot W = 65536$ \\
 Single Patch (Y)        & 1 & $C_y = 160$ \\
-Single Patch (Y+UV)     & 1 & $C_y + C_{uv} = 256$ \\
+Single Patch (YUV)     & 1 & $C_y + C_{uv} = 256$ \\
 N Patches (Y)    & N & $C_y = 160$ \\
-N Patches (Y+UV)        & N & $C_y + C_{uv} = 256$ \\
+N Patches (YUV)        & N & $C_y + C_{uv} = 256$ \\
 \bottomrule
 \end{tabularx}
+\small{Nota: $H,W$ sono le dimensioni di ogni canale latente, $C_y, C_{uv}$ sono il numero di canali della componente Y e delle componenti U e V rispettivamente.}
 \end{table}
-\paragraph{Dettagli sui metodi di preprocessing}
-Per il metodo N Patches, il testing viene fatto in modo diverso: per la fase di allenamento, per ogni immagine vengono estratte N patches che diventano campioni indipendenti associandoli all'etichetta originale, ottenendo così un training set ($N\cdot dim$) (dove dim dimensione del dataset). Per la fase di testing invece si utilizza il majority voting: per ogni immagine si estrae su tutte le patch presenti, il classificatore fa una predizione su ognuna di queste, e la predizione totale viene fatta considerando il voto sulle etichette delle patch.\\
+\paragraph{Nota sul metodo N Patches}
+Per il metodo N Patches, la fase di testing viene svolta in maniera differente rispetto alle altre: nella fase di addestramento, per ogni immagine vengono estratte N patches ottenendo un insieme di addestramento di cardinalità ($N\cdot |\mathcal{D}|$) (dove $\mathcal{D}$ è il dataset originale). Per la fase di testing invece si utilizza la strategia di \textit{majority voting}: per ogni immagine vengono estratte tutte le patch, ed il classificatore produce una predizione indipendente su ognuna di queste che si può pensare come una votazione. La predizione finale sarà la classe più frequente tra tutte le votazioni.\\
 \subsection{Metodo di addestramento}
-Come descritto nella sez. \ref{subsec:tuning}, per ogni modello si è cercato di fare un tuning degli iperparametri per cercare di trovare la migliore configurazione possibile.
-Inizialmente è stata svolta una ricerca casuale su un range di valori ampio e osservando i risultati ottenuti, è stata svolta una ricerca a griglia ristretta sui migliori 3 valori trovati per ogni iperparametro.\\
-La libreria scelta per gli algoritmi riguardanti machine learning è Scikit-learn, libreria open-source scritta in Python, considerata come una delle più importanti in questo contesto, offrendo strumenti semplici ma efficienti per molte task, tra cui quelle di classificazione.
-In particolare, per Random Forest e Gradient Boosting sono stati scelti i modelli chiamati \texttt{RandomForestClassifier} e \texttt{GradientBoostingClassifier}; mentre per gli algoritmi di ricerca degli iperparametri sono stati usati \texttt{RandomizedSearchCV} e \texttt{GridSearchCV}.
-\paragraph{Metriche di valutazione}
-\subsection{Metriche di valutazione per testing}
+Come descritto nella sez. \ref{subsec:tuning}, per ogni esperimento è stato svolto il tuning degli iperparametri: inizialmente è stata applicata una ricerca casuale su un intervallo di valori ampio; osservando i risultati ottenuti, è stata svolta una ricerca a griglia ristretta sui migliori 3 valori trovati per ogni iperparametro. Questo procedimento è stato ripetuto a dimensioni diverse ($15.000, 30.000, 50.000$) del dataset di addestramento, e i parametri migliori sono stati usati per allenare il modello finale su $30.000$ immagini, e poi valutarlo su $3.000$ immagini di test.
+La libreria scelta per gli algoritmi di machine learning è Scikit-learn, libreria open-source scritta in Python, che offre strumenti semplici ma efficienti per molte task, tra cui quelle di classificazione.
+In particolare, per Random Forest e Gradient Boosting sono stati scelti i modelli nominati \texttt{RandomForestClassifier} e \texttt{HistGradientBoostingClassifier}; mentre per gli algoritmi di ricerca degli iperparametri sono stati usati \texttt{RandomizedSearchCV} e \texttt{GridSearchCV}.
+%PIPELINE ADDESTRAMENTO
+%\paragraph{Metriche di valutazione}
+%\subsection{Metriche di valutazione per testing}
 % Accuratezza, Precision, Recall, F1-Score, Confusion Matrix
-\textit{Lista di metriche usate per valutazione nei test}
-
-\subsection{RandomForest}
-- Y 600 bit e 1200bpp
-- YUV
-\subsection{GradientBoosting}
-- Y 600 bit | Y 1200bpp
-- YUV
-
-\textit{Lista degli esperimenti condotti: bpp, num samples, metodo di estrazione, Y+UV, iperparametri}
+%\textit{Lista di metriche usate per valutazione nei test}
+%\textit{Lista degli esperimenti condotti: bpp, num samples, metodo di estrazione, Y+UV, iperparametri}
 %TODO: VEDI ESEMPI DI IPERPARAMETRI https://www.ibm.com/it-it/think/topics/hyperparameter-tuning
-
-
 \section{Risultati}
-\textit{Risultati ottenuti con riferimento a ogni esperimento svolto}
+I risultati verrano presentati in sezioni separate per tipo di classificatore, e per ognuno vengono mostrate le varie combinazioni dei fattori descritti nella sez. \ref{sec:experiments}, presentando prima una tabella con i risultati per quel modello, e poi diagrammi a barre per la visuallizzazione.
+Infine verrà fatto un confronto tra le prestazioni dei due classificatori.
+\subsection{RandomForest}
+Al termine del tuning degli iperparametri, la combinazione che ha avuto un \texttt{cv-score} più alto è:
+\begin{lstlisting}[style=pythonElegant, caption={Miglior combinazione di parametri per RandomForestClassifier} ]
+RandomForest(random_state=42, oob_score=True,
+verbose=0, n_estimators=463, max_depth=30, max_features='sqrt',
+    min_samples_leaf=2)
+\end{lstlisting}
+Nella tabella \ref{tab:RF-results-table} sono riportati i risultati sull'accuratezza ottenuti dal modello scelto negli esperimenti. 
+\begin{table}[H]
+\centering
+\caption{Risultati per Random Forest}\label{tab:RF-results-table}
+\begin{tabular}{lrllrr}
+\toprule
+Modello &  Bpp &  Comp. &     process. &     y &  y\_hat \\
+\midrule
+RF &  6 &       Y &   single & 0.683 &  0.683 \\
+RF &  6 &       Y & multiple & 0.566 &  0.564 \\
+RF &  6 &       Y & flatten &  &   \\
+RF & 12 &       Y & multiple & 0.568 &  0.560 \\
+RF & 12 &       Y &   single & 0.683 &  0.682 \\
+RF &  12 &       Y & flatten &  &   \\
+
+\midrule
+RF &  6 &     YUV &  flatten & 0.820 &  0.811 \\
+RF &  6 &     YUV &   single & 0.720 &  0.716 \\
+RF &  6 &     YUV & multiple & 0.596 &  0.588 \\
+RF & 12 &     YUV &  flatten & 0.824 &  0.804 \\
+RF & 12 &     YUV &   single & 0.720 &  0.718 \\
+RF & 12 &     YUV & multiple & 0.560 &  0.567 \\
+\bottomrule
+\end{tabular}
+\end{table}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/RF_Y_12bpp_improved.png}\\[0.5cm]
+    \includegraphics[width=\textwidth]{figures/RF_YUV_12bpp_improved.png}
+    \caption{Confronto tra prestazioni di due Random Forest diversi allenati rispettivamente su Y e YUV.}
+    \label{fig:RF_YUV_plots}
+\end{figure}
+Dalla figura \ref{fig:RF_YUV_plots} si nota come le prestazioni del Random Forest allenato su YUV siano  migliori rispetto a quello allenato solo su Y, in particolare nel caso del metodo di processing "single patch".
+
+\subsection{GradientBoosting}
+La combinazione migliore di iperparametri trovata per l'algoritmo di Gradient Boosting è:
+\begin{lstlisting}[style=pythonElegant]
+    GradientBoostingClassifier(
+        learning_rate=0.12965912630431367,
+        max_iter=596,
+        max_leaf_nodes=117,
+        min_samples_leaf=18,
+        l2_regularization=0.003042734607209594,
+        random_state=42,
+        validation_fraction=0.1)
+\end{lstlisting}
+Nella tabella (\ref{tab:GB-results-table}) sono riportati i risultati sull'accuratezza ottenuti dal modello scelto negli esperimenti, e di seguito sono riportati alcuni diagrammi a barre per la visualizzazione.
+\begin{table}[H]
+\centering
+\caption{Risultati per Gradient Boosting}
+\label{tab:GB-results-table}
+\begin{tabular}{lrllrr}
+\toprule
+Modello &  Bpp &  Comp. &     process. &     y &  y\_hat \\
+\midrule
+GB &  6 &       Y &   single & 0.696 &  0.688 \\
+GB &  6 &       Y & multiple & 0.543 &  0.535 \\
+GB &  6 &       Y &  & 0.936 &   \\
+GB & 12 &       Y &   single & 0.695 &  0.700 \\
+GB & 12 &       Y & multiple & 0.554 &  0.534 \\
+GB & 12 &       Y & flatten &  &   \\
+\midrule
+GB &  6 &     YUV &  flatten & 0.940 &  0.940 \\
+GB &  6 &     YUV &   single & 0.744 &  0.753 \\
+GB &  6 &     YUV & multiple & 0.520 &  0.540 \\
+GB & 12 &     YUV &  flatten & 0.944 &  0.940 \\
+GB & 12 &     YUV &   single & 0.744 &  0.744 \\
+GB & 12 &     YUV & multiple & 0.540 &  0.534 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/GB_Y_6bpp_improved.png}\\[0.5cm]
+    \includegraphics[width=\textwidth]{figures/GB_YUV_6bpp_improved.png}
+    \caption{Esempi di diagrammi a barre riguardanti performance di Gradient Boosting}
+    \label{fig:GB_YUV_plots}
+\end{figure}
+\subsection{Confronto tra classificatori}
+Nei diagrammi seguenti viene mostrato il confronto diretto tra le prestazioni dei due classificatori a diversi livelli di compressione.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/Compare_GB_RF_Y_6bpp_improved.png}\\[0.5cm]
+    \includegraphics[width=\textwidth]{figures/Compare_GB_RF_Y_12bpp_improved.png}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/Compare_GB_RF_YUV_6bpp_improved.png}\\[0.5cm]
+    \includegraphics[width=\textwidth]{figures/Compare_GB_RF_YUV_12bpp_improved.png}
+\end{figure}
+Si può notare come l'accuratezza non subisca grandi varianzioni ai diversi livelli di compressione scelti, mentre è evidente la differenza tra le performance dei modelli allenati esclusivamente sulla componente di luminanza e quelli allenati anche usando la crominanza; questo è ragionevole in quanto la differenza risiede nel fatto che nel secondo caso il classificatore ha più informazioni da sfruttutare nella classificazione.\\
+Inoltre, grazie al confronto tra i due algoritmi, si nota come Gradient Boosting ottenga un'accuratezza in generale più alta rispetto alla variante Random Forest.\\
+Infine, la scelta del metodo con cui processare le feature ha un impatto significativo sulle prestazioni. Il metodo flatten a livello di prestazioni risulta il migliore però, come espresso nella tabella \ref{tab:preprocessing_methods}, i dati dell'insieme di addestramento hanno un'elevata dimensionalità rispetto agli altri metodi, il che comporta un aumento dei tempi di addestramento e valutazione e una maggior necessità di risorse computazionali.
