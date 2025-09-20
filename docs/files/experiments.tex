@@ -1,4 +1,87 @@
 \chapter{Esperimenti}\label{ch:exp}
-\section{Specifiche Hardware}
-\section{Metriche di valutazione per esperimenti}
+\section{Specifiche hardware e software}
+Gli esperimenti sono stati condotti tramite connessione ssh ad un server del laboratorio \textit{LESC - Signal Processing \& Communications LAB} dell'Università degli Studi di Firenze; la macchina utilizzata presenta le seguenti caratteristiche:
+\begin{itemize}
+    \item \text{CPU}: Intel Core i9-9940X @ 3.30GHz, architettura x86\_64
+    \item \text{RAM}: 125 GB
+    \item \text{GPU}: 2 NVIDIA GeForce RTX 2080 Ti
+    \item \text{Sistema Operativo}: Ubuntu 22.04.5 LTS (Jammy)
+    \item \text{Python}: 3.7.16
+    \item \text{Librerie principali utilizzate}:
+    \begin{itemize}
+        \item PyTorch 1.10.2
+        \item scikit-learn 1.0.2  
+        \item NumPy 1.19.1
+        \item Pandas 1.3.5
+    \end{itemize}
+\end{itemize}
+Le GPU presenti sono state fondamentali per svolgere l'estrazione delle rappresentazioni latenti delle immagini tramite l'uso dell'encoder neurale di JPEG AI in tempi rapidi, mentre l'addestramento e valutazione dei modelli di classificazione sono stati completamente svolti sulle CPU disponibili.
+\section{Codice sorgente del lavoro}
+Il codice sorgente del lavoro è stato versionato tramite \texttt{git} e reso disponibile su GitHub all'indirizzo \url{https://github.com/edorustichini/thesis.git}, ed è sviluppato in Python. Nella cartella \texttt{src} sono presenti gli script per la gestione degli esperimenti. La classe usata per 
+\subsection{Pipeline di addestramento e valutazione}
+La sequenza per l'addestramento è la seguente:
+Estrazione latenti ->
+\section{Esperimenti condotti}
+Come detto l'obbiettivo era la valutazione dell'utilizzabilità delle rappresentazioni latenti estratte dall'encoder di JPEG AI per task di deepfake detection.\\
+Gli esperimenti sono stati condotti per ogni classificatore scelto su diverse variando 4 fattori principali: algoritmo, metodo di preprocessing delle feature estratte, componente scelta e \texttt{target\_bpp}. Nella tabella \ref{tab:experimentalfactors} è riportato un riepilogo dei fattori considerati.
+\begin{table}[H]
+\centering
+\caption{Fattori e loro varianti considerati durante gli esperimenti}\label{tab:experimentalfactors}
+\begin{tabularx}{\textwidth}{l X}
+\toprule
+\textbf{Fattore} & \textbf{Valori / Descrizione} \\
+\midrule
+Compressione (Bpp) & Per capire l'effetto dei livello di compressione sui risultati \\
+\midrule
+Componente target & Y vs YUV, perché in realtà sono separate (CCS, vedi \ref{subsec:latenti}): \\
+& - Y: classificatori allenati esclusivamente sulla componente della luminanza. \\
+& - YUV: classificatori allenati su tutte e tre le componenti (Y, U, V) concatenandole. \\
+\midrule
+Preprocessing & Come descritto in \ref{sec:preprocessing} diversi metodi di preprocessing sono stati testati.: \\
+& - Flatten: vettorizzazione semplice delle feature. \\
+& - Single Patch: estrazione di una patch per immagine. \\
+& - Multiple Patches: estrazione di più patch per immagine. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+Il metodo di estrazione influenza la logica di campionamento dei dati di training e le modalità di valutazione del modello; nella tabella \ref{tab:preprocessing_methods} vengono riportati i dettagli per ogni metodo.
+\begin{table}[H]
+\centering
+\caption{Confronto tra metodi di preprocessing delle feature. $C_y$: Numero di canali nella componente di luminanza, $C_{uv}$: Numero di canali nelle componenti di crominanza, N: Numero di patch estratte per immagine}\label{tab:preprocessing_methods}
+\begin{tabularx}{\textwidth}{l c c}
+\toprule
+\textbf{Preprocessing Method} & \textbf{Samples per Image} & \textbf{Feature Dimension} \\
+\midrule
+Flatten Latents         & 1 & 65536 \\
+Single Patch (Y)        & 1 & $C_y = 160$ \\
+Single Patch (Y+UV)     & 1 & $C_y + C_{uv} = 256$ \\
+N Patches (Y)    & N & $C_y = 160$ \\
+N Patches (Y+UV)        & N & $C_y + C_{uv} = 256$ \\
+\bottomrule
+\end{tabularx}
+\end{table}
+\paragraph{Dettagli sui metodi di preprocessing}
+Per il metodo N Patches, il testing viene fatto in modo diverso: per la fase di allenamento, per ogni immagine vengono estratte N patches che diventano campioni indipendenti associandoli all'etichetta originale, ottenendo così un training set ($N\cdot dim$) (dove dim dimensione del dataset). Per la fase di testing invece si utilizza il majority voting: per ogni immagine si estrae su tutte le patch presenti, il classificatore fa una predizione su ognuna di queste, e la predizione totale viene fatta considerando il voto sulle etichette delle patch.\\
+\subsection{Metodo di addestramento}
+Come descritto nella sez. \ref{subsec:tuning}, per ogni modello si è cercato di fare un tuning degli iperparametri per cercare di trovare la migliore configurazione possibile.
+Inizialmente è stata svolta una ricerca casuale su un range di valori ampio e osservando i risultati ottenuti, è stata svolta una ricerca a griglia ristretta sui migliori 3 valori trovati per ogni iperparametro.\\
+La libreria scelta per gli algoritmi riguardanti machine learning è Scikit-learn, libreria open-source scritta in Python, considerata come una delle più importanti in questo contesto, offrendo strumenti semplici ma efficienti per molte task, tra cui quelle di classificazione.
+In particolare, per Random Forest e Gradient Boosting sono stati scelti i modelli chiamati \texttt{RandomForestClassifier} e \texttt{GradientBoostingClassifier}; mentre per gli algoritmi di ricerca degli iperparametri sono stati usati \texttt{RandomizedSearchCV} e \texttt{GridSearchCV}.
+\paragraph{Metriche di valutazione}
+\subsection{Metriche di valutazione per testing}
+% Accuratezza, Precision, Recall, F1-Score, Confusion Matrix
+\textit{Lista di metriche usate per valutazione nei test}
+
+\subsection{RandomForest}
+- Y 600 bit e 1200bpp
+- YUV
+\subsection{GradientBoosting}
+- Y 600 bit | Y 1200bpp
+- YUV
+
+\textit{Lista degli esperimenti condotti: bpp, num samples, metodo di estrazione, Y+UV, iperparametri}
+%TODO: VEDI ESEMPI DI IPERPARAMETRI https://www.ibm.com/it-it/think/topics/hyperparameter-tuning
+
+
 \section{Risultati}
+\textit{Risultati ottenuti con riferimento a ogni esperimento svolto}
