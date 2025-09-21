@@ -9,7 +9,7 @@ sys.path.append('../')
 from common import load_on_RAM
 from config import setup_parser
 from data.preprocessing import (
-    flatten_latents,
+    flatten_latents_YUV,
     Y_all_patches_per_latent, 
     Y_multiple_patches_per_latent, 
     Y_single_patch_per_latent, 

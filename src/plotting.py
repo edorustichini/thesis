@@ -420,6 +420,64 @@ def generate_all_thesis_plots(data_dict, out_dir='figures'):
                 print(f" errore: {e})")
     
     return generated_files
+
+
+data_dict = {
+    'RF': {
+        6: {
+            'Y': {
+                'flatten': {'y': 0.801, 'y_hat': 0.789},
+                'multiple': {'y': 0.607, 'y_hat': 0.597},
+                'single': {'y': 0.683, 'y_hat': 0.683},
+            },
+            'YUV': {
+                'flatten': {'y': 0.82, 'y_hat': 0.811},
+                'multiple': {'y': 0.63, 'y_hat': 0.605},
+                'single': {'y': 0.72, 'y_hat': 0.716},
+            }
+        },
+        12: {
+            'Y': {
+                'flatten': {'y': 0.807, 'y_hat': 0.801},
+                'multiple': {'y': 0.568, 'y_hat': 0.560},
+                'single': {'y': 0.683, 'y_hat': 0.682},
+            },
+            'YUV': {
+                'flatten': {'y': 0.824, 'y_hat': 0.804},
+                'multiple': {'y': 0.65, 'y_hat': 0.632},
+                'single': {'y': 0.72, 'y_hat': 0.718},
+            }
+        }
+    },
+    'GB': {
+        6: {
+            'Y': {
+                'flatten': {'y': 0.89, 'y_hat': 0.87},
+                'multiple': {'y': 0.543, 'y_hat': 0.535},
+                'single': {'y': 0.696, 'y_hat': 0.688},
+            },
+            'YUV': {
+                'flatten': {'y': 0.94, 'y_hat': 0.94},
+                'multiple': {'y': 0.67, 'y_hat': 0.645},
+                'single': {'y': 0.744, 'y_hat': 0.753},
+            }
+        },
+        12: {
+            'Y': {
+                'flatten': {'y': 0.9, 'y_hat': 0.89},
+                'multiple': {'y': 0.554, 'y_hat': 0.534},
+                'single': {'y': 0.695, 'y_hat': 0.700},
+            },
+            'YUV': {
+                'flatten': {'y': 0.944, 'y_hat': 0.940},
+                'multiple': {'y': 0.68, 'y_hat': 0.667},
+                'single': {'y': 0.744, 'y_hat': 0.744},
+            }
+        }
+    }
+}
+
+
 # Esempio di utilizzo
 if __name__ == "__main__":
     pass

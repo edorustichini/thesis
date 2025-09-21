@@ -10,13 +10,13 @@ sys.path.append('../')
 from common import load_on_RAM
 from data.dataset_manager import prepare_dataset
 from config import setup_parser
-from data.preprocessing import (flatten_latents,
+from data.preprocessing import (flatten_latents_YUV,
                                 Y_all_patches_per_latent, 
                                 Y_multiple_patches_per_latent, 
                                 Y_single_patch_per_latent, 
                                 YUV_all_patches_per_latent, 
                                 YUV_single_patch_per_latent,
-                                YUV_multiple_patches_per_latent)
+                                YUV_multiple_patches_per_latent, flatten_latents_Y)
 
 def train_RF_grid(args, preprocess, X_raw=None, X_hat_raw=None, labels=None):
     param_grid = {
@@ -145,10 +145,13 @@ def exp_single_YUV_RF_no_search(args, rf=None, X_raw=None, X_hat_raw=None, label
     
 
 def exp_flatten_RF_no_search(args,rf=None, X_raw=None, X_hat_raw=None, labels=None):
-    args.models_save_dir = "/data/lesc/users/rustichini/thesis/models_saved/FLATTEN/"
-    train_RF_no_search(args, rf, preprocess=flatten_latents, X_raw=X_raw, X_hat_raw=X_hat_raw, labels=labels)
-    test_process(args, preprocess=flatten_latents)
-
+    args.models_save_dir = "/data/lesc/users/rustichini/thesis/models_saved/FLATTEN/YUV/"
+    train_RF_no_search(args, rf, preprocess=flatten_latents_YUV, X_raw=X_raw, X_hat_raw=X_hat_raw, labels=labels)
+    test_process(args, preprocess=flatten_latents_YUV)
+def exp_flatten_RF_no_search(args,rf=None, X_raw=None, X_hat_raw=None, labels=None):
+    args.models_save_dir = "/data/lesc/users/rustichini/thesis/models_saved/FLATTEN/Y/"
+    train_RF_no_search(args, rf, preprocess=flatten_latents_YUV, X_raw=X_raw, X_hat_raw=X_hat_raw, labels=labels)
+    test_process(args, preprocess=flatten_latents_Y)
 def exp_learning_curve_Y_RF(args):
     rf = RandomForest(random_state=42, oob_score=True, verbose=0, n_estimators=670, max_depth=42, max_features='sqrt', min_samples_leaf=2)
     preprocess = Y_single_patch_per_latent
@@ -223,8 +226,8 @@ if __name__ == "__main__":
     
     args.save_latents = True
 
-    args.num_samples = 10000
-    args.num_samples_test = 1000
+    args.num_samples = 20000
+    args.num_samples_test = 3000
     #all_exp_RF_single(args)
     #args.set_target_bpp = 600
     rf = RandomForest(max_depth=25, max_features='sqrt', min_samples_leaf=4,

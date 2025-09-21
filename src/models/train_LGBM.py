@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from lightgbm import LGBMClassifier
+from sklearn.ensemble import HistGradientBoostingClassifier
 from manager import LGBM, GridSearch, RandomizedSearch
 from tester import test_process, test_single_target
 from trainer import train_grid_search, train_random_search, train_model_no_search
@@ -12,7 +12,8 @@ from data.dataset_manager import prepare_dataset
 from common import load_on_RAM
 from config import setup_parser
 from data.preprocessing import (
-    flatten_latents,
+    flatten_latents_Y,
+    flatten_latents_YUV,
     Y_all_patches_per_latent, 
     Y_multiple_patches_per_latent, 
     Y_single_patch_per_latent, 
@@ -30,7 +31,7 @@ def train_LGBM_grid(args, preprocess, X_raw=None, X_hat_raw=None, labels=None):
         'subsample': [0.8, 1.0],
         'colsample_bytree': [0.8, 1.0]
     }
-    lgbm = LGBMClassifier(random_state=42, verbose=-1)
+    lgbm = HistGradientBoostingClassifier(random_state=42, verbose=-1)
     train_grid_search(args, lgbm, param_grid, preprocess, X_raw=X_raw, X_hat_raw=X_hat_raw, labels=labels)
 
 def train_LGBM_random(args, preprocess, X_raw=None, X_hat_raw=None, labels=None):
@@ -45,11 +46,11 @@ def train_LGBM_random(args, preprocess, X_raw=None, X_hat_raw=None, labels=None)
     'colsample_bytree': stats.uniform(0.5, 0.5) 
     }
     args.model_name = "GB_random_search"
-    lgbm = LGBMClassifier(random_state=42)
+    lgbm = HistGradientBoostingClassifier(random_state=42)
     train_random_search(args, lgbm, param_distributions, preprocess, X_raw=X_raw, X_hat_raw=X_hat_raw, labels=labels)
 
 def train_LGBM_no_search(args, preprocess,lgbm=None, X_raw=None, X_hat_raw=None, labels=None):
-    lgbm = LGBMClassifier(random_state=42, oob_score=True, verbose=0) if lgbm is None else lgbm
+    lgbm = LGBM(random_state=42, verbose=0) if lgbm is None else lgbm
     train_model_no_search(args, lgbm, preprocess, X_raw=X_raw, X_hat_raw=X_hat_raw, labels=labels)
 
 def print_search_results(search_results):
@@ -131,15 +132,19 @@ def exp_single_Y_LGBM_no_search(args,lgbm, X_raw=None, X_hat_raw=None, labels=No
 def exp_single_YUV_LGBM_no_search(args,lgbm, X_raw=None, X_hat_raw=None, labels=None):
     args.models_save_dir = "/data/lesc/users/rustichini/thesis/models_saved/SINGLE_PATCH/YUV/NO_SEARCH_LGBM"
     train_LGBM_no_search(args, preprocess=YUV_single_patch_per_latent, lgbm=lgbm, X_raw=X_raw, X_hat_raw=X_hat_raw, labels=labels)
+    args.model_file_y = "/data/lesc/users/rustichini/thesis/models_saved/SINGLE_PATCH/YUV/600_bpp/30000_samples/y/RF_463estimators.joblib"
+    args.model_file_y_hat = "/data/lesc/users/rustichini/thesis/models_saved/SINGLE_PATCH/YUV/600_bpp/30000_samples/y_hat/RF_463estimators.joblib"
     test_process(args, preprocess=YUV_single_patch_per_latent)
 
-def exp_flatten_GB_no_search(args, lgbm=None, X_raw=None, X_hat_raw=None, labels=None):
+def exp_flatten_YUV_GB_no_search(args, lgbm=None, X_raw=None, X_hat_raw=None, labels=None):
     args.models_save_dir = "/data/lesc/users/rustichini/thesis/models_saved/FLATTEN/"
-    train_LGBM_no_search(args, preprocess=flatten_latents, lgbm=lgbm, X_raw=X_raw, X_hat_raw=X_hat_raw, labels=labels)
-    args.set_target_bpp = 1200
-    args.model_file_y = "/data/lesc/users/rustichini/thesis/models_saved/FLATTEN/600_bpp/35000_samples/y/GB.joblib"
-    args.model_file_y_hat = "/data/lesc/users/rustichini/thesis/models_saved/FLATTEN/600_bpp/35000_samples/y_hat/GB.joblib"
-    test_process(args, preprocess=flatten_latents)
+    train_LGBM_no_search(args, preprocess=flatten_latents_YUV, lgbm=lgbm, X_raw=X_raw, X_hat_raw=X_hat_raw, labels=labels)
+    test_process(args, preprocess=flatten_latents_YUV)
+
+def exp_flatten_Y_GB_no_search(args, lgbm=None, X_raw=None, X_hat_raw=None, labels=None):
+    args.models_save_dir = "/data/lesc/users/rustichini/thesis/models_saved/FLATTEN/Y/"
+    train_LGBM_no_search(args, preprocess=flatten_latents_Y, lgbm=lgbm, X_raw=X_raw, X_hat_raw=X_hat_raw, labels=labels)
+    test_process(args, preprocess=flatten_latents_Y)
 
 def exp_multiple_Y_LGBM_no_search(args, lgbm=None, X_raw=None, X_hat_raw=None, labels=None):
     args.models_save_dir = "/data/lesc/users/rustichini/thesis/models_saved/MULTIPLE_PATCHES/Y/NO_SEARCH_LGBM"
@@ -158,17 +163,17 @@ def all_exp_LGBM_single(args):
               min_samples_leaf=18,
               l2_regularization=0.003042734607209594,
               random_state=42,
-              early_stopping=True,       # consigliato per risparmiare tempo
+              early_stopping=True,       
               validation_fraction=0.1)
     for bpp in [600,1200]:
         args.set_target_bpp = bpp
         save_latent_path = os.path.join(args.bin_path,str(args.set_target_bpp)+"_bpp","latent") if args.save_latents else None
-        X_raw, X_hat_raw, labels = prepare_dataset(args, args.train_csv, save_latent_path)
-        
+        X_raw, X_hat_raw, labels = None, None, None #prepare_dataset(args, args.train_csv, save_latent_path)
+
         args.num_samples = 20000
-        exp_single_Y_LGBM_no_search(args, lgbm=gb, X_raw=X_raw, X_hat_raw=X_hat_raw, labels=labels)
+        #exp_single_Y_LGBM_no_search(args, lgbm=gb, X_raw=X_raw, X_hat_raw=X_hat_raw, labels=labels)
         exp_single_YUV_LGBM_no_search(args, lgbm=gb, X_raw=X_raw, X_hat_raw=X_hat_raw, labels=labels)
-        exp_flatten_GB_no_search(args, lgbm=gb, X_raw=X_raw, X_hat_raw=X_hat_raw, labels=labels)
+        exp_flatten_YUV_GB_no_search(args, lgbm=gb, X_raw=X_raw, X_hat_raw=X_hat_raw, labels=labels)
 
 def all_exp_LGBM_multiple(args):
     gb = LGBM(learning_rate=0.12965912630431367,
@@ -188,6 +193,22 @@ def all_exp_LGBM_multiple(args):
         exp_multiple_Y_LGBM_no_search(args, lgbm=gb, X_raw=X_raw, X_hat_raw=X_hat_raw, labels=labels)
         exp_multiple_YUV_LGBM_no_search(args, lgbm=gb, X_raw=X_raw, X_hat_raw=X_hat_raw, labels=labels)
 
+def all_exp_GB_flatten_no_search(args):
+    gb = LGBM(learning_rate=0.12965912630431367,
+              max_iter=596,
+              max_leaf_nodes=117,
+              min_samples_leaf=18,
+              l2_regularization=0.003042734607209594,
+              random_state=42,
+              early_stopping=True,       
+              validation_fraction=0.1)    
+    for bpp in [600, 1200]:
+        args.set_target_bpp = bpp
+        save_latent_path = os.path.join(args.bin_path, str(args.set_target_bpp)+"_bpp", "latent") if args.save_latents else None
+        X_raw, X_hat_raw, labels = prepare_dataset(args, args.train_csv, save_latent_path)
+        exp_flatten_Y_GB_no_search(args, gb, X_raw=X_raw, X_hat_raw=X_hat_raw, labels=labels)
+        exp_flatten_YUV_GB_no_search(args, gb, X_raw=X_raw, X_hat_raw=X_hat_raw, labels=labels)
+
 def test_model(args, filepath, preprocess):
     model = load_on_RAM(filepath)
     test_process(args, model=model, preprocess=preprocess)
@@ -202,17 +223,10 @@ if __name__ == "__main__":
 
 
     #all_exp_LGBM_single(args)
+    #all_exp_GB_flatten_no_search(args)
     all_exp_LGBM_multiple(args)
-
+    
     """
-    # EXP FLATTEN
-    for bpp in [1200, 600]:
-        args.set_target_bpp = bpp
-        args.num_samples = 3000
-        args.num_samples_test = 300
-        exp_flatten_GB_no_search(args)
-    
-    
     exp_flatten_GB_no_search(args)
     args.set_target_bpp = 600
     args.num_samples = 35000

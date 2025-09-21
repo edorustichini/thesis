@@ -1,5 +1,10 @@
 import torch
 
+def flatten_latents_Y(latents, labels):
+    return flatten_latents(latents, labels, concat_uv=False)
+
+def flatten_latents_YUV(latents, labels):
+    return flatten_latents(latents, labels, concat_uv=True)
 
 def flatten_latents(latents, labels, concat_uv=True):
     flat_set = []

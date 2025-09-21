@@ -29,16 +29,14 @@ def testing(model, X, y, preprocess, target:str):
         predictions = []
         real_labels = []
         for i in range(num_img):
-            
+            print(i, end=' ')
             start = i * num_patches_per_img
-            end = start + num_patches_per_img
-            X_img = X[start:end]
-            y_img = y[start:end]
-            y_test, y_pred = model_manager.test_model(X_img, y_img)
+            end = start + num_patches_per_img-1
+            y_pred_img = y_pred[start:end]            
             from collections import Counter
-            major_vote = Counter(y_pred).most_common(1)[0][0]
+            major_vote = Counter(y_pred_img).most_common(1)[0][0]
             predictions.append(major_vote)
-            real_labels.append(y_test[start])
+            real_labels.append(y_test[start+1])
         y_test = np.array(real_labels)
         y_pred = np.array(predictions)
     print(f"len y_test: {len(y_test)}, len y_pred: {len(y_pred)}")

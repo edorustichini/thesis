@@ -6,7 +6,7 @@ import os
 import numpy as np
 import time
 from data.dataset_manager import  prepare_dataset
-from data.preprocessing import flatten_latents, create_patches_dataset
+from data.preprocessing import flatten_latents_YUV, create_patches_dataset
 from manager import ModelManager, GridSearch, RandomForest, RandomizedSearch
 from sklearn.ensemble import RandomForestClassifier
 from common import format_time
