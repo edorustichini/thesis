@@ -107,13 +107,13 @@ Dalla figura \ref{fig:RF_YvsYUV} si nota come le prestazioni del Random Forest a
 Nella figura \ref{fig:RF_YUV_confusion} sono riportate le matrici di confusione per le configurazioni che hanno ottenuto migliori prestazioni con l'uso di Random Forest.
 \begin{figure}[H]
     \centering
-    \begin{subfigure}[b]{0.45\textwidth}
+    \begin{subfigure}[b]{0.7\textwidth}
         \centering
         \includegraphics[width=\textwidth]{figures/confusion_matrix_flatten_YUV_RF.png}
         \caption{Metodo flatten}
     \end{subfigure}
     \hfill
-    \begin{subfigure}[b]{0.45\textwidth}
+    \begin{subfigure}[b]{0.7\textwidth}
         \centering
         \includegraphics[width=\textwidth]{figures/confusion_matrix_YUV_single_RF.png}
         \caption{Metodo single patch}
@@ -170,13 +170,13 @@ Dai risultati osservati si nota un comportamento simile a quello del Random Fore
 Nella figura \ref{fig:GB_YUV_confusion} sono riportate le matrici di confusione per le configurazioni che hanno ottenuto migliori prestazioni.
 \begin{figure}[H]
     \centering
-    \begin{subfigure}[b]{0.45\textwidth}
+    \begin{subfigure}[b]{0.7\textwidth}
         \centering
         \includegraphics[width=\textwidth]{figures/confusion_matrix_YUV_flatten_GB.png}
         \caption{Metodo flatten}
     \end{subfigure}
     \hfill
-    \begin{subfigure}[b]{0.45\textwidth}
+    \begin{subfigure}[b]{0.7\textwidth}
         \centering
         \includegraphics[width=\textwidth]{figures/confusion_matrix_YUV_single_GB.png}
         \caption{Metodo single patch}
@@ -210,16 +210,15 @@ La miglior accuratezza in presenza di più informazioni viene confermata anche d
 \toprule
 Modello & Preprocessing & Tempo di addestramento \\
 \midrule
-RF &      single &  ~3min \\
-RF &    multiple &  ~20min\\
-RF &      flatten &  ~1h45min\\
+RF &      single &  $\sim$3min \\
+RF &    multiple &  $\sim$20min\\
+RF &      flatten &  $\sim$1h45min\\
 \midrule
-GB &      single &  ~2min \\
-GB &    multiple &  ~15min \\
-GB &      flatten &  ~1h \\
+GB &      single &  $\sim$2min \\
+GB &    multiple &  $\sim$15min \\
+GB &      flatten &  $\sim$1h \\
 \bottomrule
 \end{tabular}
 \end{table}
 Il metodo di single patch risulta essere il miglior compromesso tra accuratezza e tempi di addestramento, ma ha il problema della forte dipendenza dalla posizione della patch estratta. Il metodo multiple patches ha ottenuto risultati peggiori, ma potrebbe essere utilizzato in casi dove non sono disponibili molti campioni di addestramento, permettendo di aumentare la cardinalità del dataset come mostrato nella tabella \ref{tab:preprocessing_methods}.\\
-Inoltre, osservando le tabelle \ref{tab:GB_RF_Y_comparison} e \ref{tab:GB_RF_YUV_comparison} di confronto si nota come Gradient Boosting ottenga un'accuratezza in generale più alta rispetto alla variante Random Forest, data dalla diversa modalità con il quale vengono costruiti gli alberi di decisione di base.\\
-
+Inoltre, osservando le tabelle \ref{fig:GB_RF_Y_comparison} e \ref{fig:GB_RF_YUV_comparison} si può notare come Gradient Boosting ottenga un'accuratezza in generale più alta rispetto alla variante Random Forest, dovuta dalla diversa modalità con il quale vengono costruiti gli alberi di decisione di base.\\
